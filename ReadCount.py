@@ -44,11 +44,15 @@ class Bisect():
     def create_index(self):
         new_chr_list = []
         self.f.seek(0)
-        for l in self.f:
-            chr = l.split()[0]
-            chr = "chr"+chr.replace("chr","")
-            if chr in self.chr_list and chr not in new_chr_list:
-                new_chr_list.append(chr)
+        byte = self.f.read(100)
+        while(byte):
+            byte = self.f.read(5000)
+            if self.f.readline():
+                l = self.f.readline()
+                chr = l.split()[0]
+                chr = "chr"+chr.replace("chr","")
+                if chr in self.chr_list and chr not in new_chr_list:
+                    new_chr_list.append(chr)
         self.chr_list = new_chr_list
         self.f.seek(0)
         return
