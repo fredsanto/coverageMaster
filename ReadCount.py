@@ -47,7 +47,7 @@ class Bisect():
         byte = self.f.read(100)
         while(byte):
             byte = self.f.read(5000)
-            l = self.f.readline():
+            l = self.f.readline()
             if l:
                 chr = l.split()[0]
                 chr = "chr"+chr.replace("chr","")
