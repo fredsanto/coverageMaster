@@ -3,6 +3,7 @@ from numpy import *
 from collections import defaultdict
 from scipy.stats import norm
 import pywt
+from libCoverageMaster import logreport
 
 def generate_states(off):
     o = []
@@ -88,7 +89,7 @@ def e(i,O,Nstd1 = 7):
 
 def _reduce(vector):
     ret_vector = []
-    str_vector = map(str,vector)
+    str_vector = list(map(str,vector))
     for n,v in enumerate(str_vector):
         if str_vector[n:].count(v) == 1:
             ret_vector.append(vector[n])
@@ -102,28 +103,32 @@ class Observations:
 
 ###Viterbi
 def downsample(signal,lev):
-    coeffs = pywt.wavedec(signal,"haar",level = lev)
-    ds = pywt.upcoef('a',coeffs[0],'haar',level = 1)
-    ds = ds/mean(ds)*mean(signal)
+    baseline = 1e-5
+    wvfam = "haar"
+    #ds = pywt.wavedec(signal+baseline,wvfam,level = lev)[0]
+    ds = pywt.downcoef('a',signal+baseline,wvfam,level = lev)/lev
+    #ds = pywt.upcoef('a',coeffs[0],wvfam,level = 1)
+    #ds = (ds-min(ds))*(max(signal)-min(signal))/(max(ds)-min(ds)) + min(signal)
+    #if signal[0]:
+    #    ds = ds*signal[0]/ds[0]
     return ds
 
 def upsample(signal,ln):
-    return repeat(signal,ln/len(signal)+1)
+    return repeat(signal,ceil(ln/len(signal)))
 
-def HMM(signal,std,booster = 1):
+def HMM(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
+    #lev is the parameter -l
     off = .1
-    lev = 6
     if len(signal)>1e6:
         lev = 12
-    pos_states  = downsample(signal,lev)
+    
     o1 = [1,1.5,0.5]#[1,1+2*median(std)+2*off,1-2*median(std)-2*off] ##states
     Obs = Observations(o1) ##to adjust
     v = zeros(len(Obs.o_states))
     pij = zeros((len(Obs.o_states),len(Obs.o_states)))
-    M = zeros(len(pos_states))
-    path_max = []
+    
     v = 1*e(Obs.o_states[0],Obs)
-    a = 1e-7
+    a = 4.5e-6# 1e-7 #park se o et al. Nat Gen 2010
     for i,oi in enumerate(Obs.o_states):
         for j,oj in enumerate(Obs.o_states):            
             N = oi
@@ -132,44 +137,68 @@ def HMM(signal,std,booster = 1):
                 pij[i,j] = 1-a*booster #.99999999998#/(1+d(oi,oj))
     
     fp_list = []
- 
-    count = 0
-    for t in range(1,len(pos_states)):
-        print "%d\r"%count,
-        sys.stdout.flush()
-        _v = v*pij
-        _m = argmax(_v,1)
-        path_max.append(_m)
-        _em = e(pos_states[t],Obs,std[t])
-        v = array([_v[i,_m[i]] *_em[i] for i in range(0,len(_m))])
-        v = v /max(v)
-        count+=1
- #backtrack
-    M = argmax(v)
-    i = len(pos_states)-2
-    final_path = []
-    final_path.append(o1[M])
-    while i>-1:
-        M = path_max[i][M]
+    ZOOM = True
+    BEGIN =True
+    while(ZOOM):
+        pos_states  = downsample(signal,lev)
+        M = zeros(len(pos_states))
+        path_max = []
+        _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
+        if BEGIN:
+            trigger =1* array([e[0]<e[1] or e[0]<e[2] for e in _em_v])
+            BEGIN = False
+        else:
+            trigger = downsample(trigger,lev)
+        count = 0
+        for t in range(1,len(pos_states)):
+            #print("%d\r"%count, end=' ')
+            #sys.stdout.flush()
+            _v = v*pij
+            _m = argmax(_v,1)
+            path_max.append(_m)
+            _em = _em_v[t]
+            v = array([_v[i,_m[i]] *_em[i] for i in range(0,len(_m))])
+            v = v /max(v)
+            count+=1
+        #backtrack
+        M = argmax(v)
+        i = len(pos_states)-2
+        final_path = []
         final_path.append(o1[M])
-        i=i-1
-    fp_list = final_path[::-1]
-    return upsample(fp_list,len(signal))[:len(signal)],o1
- 
+        while i>-1:
+            M = path_max[i][M]
+            final_path.append(o1[M])
+            i=i-1
+        fp_list = final_path[::-1]
+        
+        approx = upsample(fp_list,len(signal))[:len(signal)]
+        if mask is not None:
+            trigger = upsample(trigger,len(signal))[:len(signal)]
+            if sum(trigger*mask) and sum((approx-1)*trigger) == 0:
+                ZOOM = True
+                lev = lev - 1
+                if lev == 0:
+                    break
+                logreport( "Zooming %d"%lev, logfile =LOGFILE)
+            else:
+                ZOOM = False
+        else:
+            break #no zooming for regions
+    return(approx,o1) 
+'''
 ##save_results
 def distance(_fp, pos_meas):
     min_dist = None
     for n,genome in enumerate(_fp):
       dist = 0
-      for CHR in genome.keys():
+      for CHR in list(genome.keys()):
        for (path,hmmlev) in genome:
-        res = array(map(lambda x:hmmlev[x],path))
-        ps = array(map(lambda x:x[1:],pos_meas[CHR]))
+        res = array([hmmlev[x] for x in path])
+        ps = array([x[1:] for x in pos_meas[CHR]])
         dist += sum(sum((ps - res)**2))
       if not min_dist or min_dist[1] > dist:
           min_dist = (n,dist,genome)
     return min_dist
     
 ##n,d,final = distance(total_fp_list,pos_meas) #final = final_o1,final_path0
-
-
+'''

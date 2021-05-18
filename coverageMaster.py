@@ -23,18 +23,19 @@ import matplotlib
 matplotlib.use('PDF')
 from pylab import *
 from collections import defaultdict
-from scipy import stats
+#from scipy import stats
 from HMM_CM import *
 from ReadCount import *
 import time
 from sympy import Union, Interval, SympifyError
-
+import pickle
+        
 
 
 def logreport(text, logfile):
     localtime = time.asctime( time.localtime(time.time()) )
-    print >>sys.stderr, "%s - %s"%(localtime,text)
-    print >>logfile, "%s - %s"%(localtime,text)
+    print("%s - %s"%(localtime,text), file=sys.stderr)
+    print("%s - %s"%(localtime,text), file=logfile)
     sys.stderr.flush()
     logfile.flush()
 
@@ -111,7 +112,12 @@ def union(data):
        else list(u.args)
 
 def gene_reference(genes, reference, nexons = 10):
-    
+
+ if 0 and 1000<len(genes)<5000 and os.path.isfile(sys.path[0]+"/codedRef"):
+     with open(sys.path[0]+"/codedRef",'rb') as fp:
+         gs = pickle.load(fp)
+         return(gs)
+ else:
     gf= []
     genes = sorted(list(set(genes)))
     for g in genes:
@@ -119,13 +125,13 @@ def gene_reference(genes, reference, nexons = 10):
             
             
             #transcripts = map(lambda g: (filter(lambda r:g == r.split()[-1] and 'NR' not in r.split()[0],reference)), [g])[0]
-            transcripts = map(lambda g: (filter(lambda r:g == r.split()[-1],reference)), [g])[0]
+            transcripts = [([r for r in reference if g == r.split()[-1]]) for g in [g]][0]
             #if not transcripts:
             #    transcripts = map(lambda g: (filter(lambda r:g == r.split()[0] ,reference)), [g])[0]
             #gf.append(transcripts[argmax(map(lambda x:int(x.split()[7]),transcripts))])
             #check chromosome
-            transcripts_X = filter(lambda t:t.split()[1].replace("chr","")=="X", transcripts)
-            transcripts_Y = filter(lambda t:t.split()[1].replace("chr","")=="Y", transcripts)
+            transcripts_X = [t for t in transcripts if t.split()[1].replace("chr","")=="X"]
+            transcripts_Y = [t for t in transcripts if t.split()[1].replace("chr","")=="Y"]
             transcripts = [t for t in transcripts if t not in transcripts_X+transcripts_Y]
             for txs in [transcripts,transcripts_X,transcripts_Y]:
                 maxend = 0
@@ -161,29 +167,30 @@ def gene_reference(genes, reference, nexons = 10):
         
         exfirst = g.split('\t')[3]
         exlast = g.split('\t')[4]
-        exstart = map(int,g.split('\t')[8].split(',')[:-1]) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
-        exend = map(int,g.split('\t')[9].split(',')[:-1]) if len(g.split('\t')[9].split(','))>1 else int(g.split('\t')[9])
-        newex = union(zip(exstart,exend)) if type(exend)==list else [Interval(exstart,exend)] #merge and combine exons from different txs
-        exstart = map(lambda x:str(x.start),newex)
-        exend = map(lambda x:str(x.end),newex)
+        exstart = list(map(int,g.split('\t')[8].split(',')[:-1])) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
+        exend = list(map(int,g.split('\t')[9].split(',')[:-1])) if len(g.split('\t')[9].split(','))>1 else int(g.split('\t')[9])
+        newex = union(list(zip(exstart,exend))) if type(exend)==list else [Interval(exstart,exend)] #merge and combine exons from different txs
+        exstart = [str(x.start) for x in newex]
+        exend = [str(x.end) for x in newex]
         #print(g)
         try:
-            replace_s = exstart.index(filter(lambda x:float(exfirst)<=float(x),exstart)[0])-1
+            replace_s = exstart.index([x for x in exstart if float(exfirst)<=float(x)][0])-1
         except:
             replace_s = len(exstart)-1
         try:
-            replace_e = exend.index(filter(lambda x:float(exlast)>=float(x),exend)[-1])+1
+            replace_e = exend.index([x for x in exend if float(exlast)>=float(x)][-1])+1
         except:
             replace_e = 0
         replace_s = max(replace_s,0)
         replace_e = min(replace_e,len(exend)-1)
         exstart[replace_s] = exfirst
         exend[replace_e] = exlast
-        expairs = zip(exstart[replace_s:replace_e+1],exend[replace_s:replace_e+1])
+        expairs = list(zip(exstart[replace_s:replace_e+1],exend[replace_s:replace_e+1]))
         gdata = {'NM':g.split()[0],'chr':g.split('\t')[1],'expairs':expairs,'gene':g.split('\t')[-1],'start':exfirst,'end':exlast}
         query = exon_boundaries(gdata['chr'],gdata['start'],gdata['end'],exon_reference, nexons)
         gdata.update({'query':query})
         gs.append(gdata)
+        
     return gs
 
 
@@ -205,7 +212,7 @@ try:
     offset = float(options.offset)
     cov_region = args[0]
     if '.cov' not in cov_region:
-        print "\nMichel, please.. not again... use the .cov!\n"
+        print("\nMichel, please.. not again... use the .cov!\n")
         raise Exception
     
     stats_file = args[1]
@@ -227,13 +234,24 @@ try:
         qregions += [qregion,XIST]
     else:
         try:
-            glist = map(lambda x:x.split()[0],open(args[2]).read().strip().split(' '))
+            gfilename = args[2]
+            glistfile = open(gfilename)
+            glist = [x.split()[0] for x in glistfile.read().strip().split(' ')]
             if len(glist)<2:
-                glist = map(lambda x:x.split("\n"),open(args[2]).read().strip().split(' '))[0]
+                glist = [x.split("\n") for x in open(args[2]).read().strip().split(' ')][0]
         except:
                 glist = args[2].split(",")
         if ':' not in glist[0]:
-            qregions = gene_reference(glist, reference, int(options.exons))+[XIST]
+            if os.path.exists("%s_coderef"%gfilename):
+                qregions = pickle.load(open("%s_coderef"%gfilename,"rb"))
+            else:
+                qregions = gene_reference(glist, reference, int(options.exons))+[XIST]
+            ###here > dump if it is non existing
+            try:
+                if not os.path.exists("%s_coderef"%gfilename):
+                    pickle.dump(qregions,open("%s_coderef"%gfilename,"wb"))
+            except:
+                pass #not a glist file
         else:
             for r in glist:
                 qregion = {}
@@ -246,15 +264,15 @@ try:
             else:
                 qregions += XIST
     if not options.ref:
-        print "\nInclude the reference"
+        print("\nInclude the reference")
 #        raise Exception
 
     for f in [stats_file,options.ref,cov_region,options.control,args[2]]:
-        print "%s - %d"%(f, os.path.isfile(f))
+        print("%s - %d"%(f, os.path.isfile(f)))
  
     
 except:
-    print "Unexpected error:", sys.exc_info()[0]
+    print("Unexpected error:", sys.exc_info()[0])
     parser.print_help()
     sys.exit(0)
 
@@ -302,10 +320,7 @@ def realign ( pos, ref_pos):
   n = 0
   for n,p in enumerate(ref_pos):
     for s,j,f in pos[n:]:
-        #cx = c.replace("chr","")
-        #cp = p[0].replace("chr","")
         if int(s)<int(p):
-#            if int(s)!=int(ref_pos[n-1][1]):
             pos.remove((s,j,f))
         if int(s)==int(p):
             break
@@ -319,7 +334,7 @@ def realign ( pos, ref_pos):
 
 def calculate_exon(gene, pos):
     try:
-        exn = gene['expairs'].index(filter(lambda x:int(x[0])<int(pos)<int(x[1]),gene['expairs'])[0])
+        exn = gene['expairs'].index([x for x in gene['expairs'] if int(x[0])<int(pos)<int(x[1])][0])
         if exn%2:
             return 1
         else:
@@ -328,9 +343,9 @@ def calculate_exon(gene, pos):
         return 0
 
 def signalProcessor(gene, cr, cref, stats, red=False):
- 
+  
   if 0 < (int(gene['end'])-int(gene['start'])) and gene['chr']!='chrM':
-    if gene.has_key('query'):
+    if 'query' in gene:
         qregion = gene['query'] 
         logreport( "Processing Gene: %s - Region %s:%s-%s"%(gene['gene'],gene['chr'],gene['start'],gene['end']), logfile = LOGFILE)
     else:
@@ -345,7 +360,7 @@ def signalProcessor(gene, cr, cref, stats, red=False):
         mstd_region = []
         pstd_region = []
         pos_region = []
-	count = 0
+        count = 0
         size = (int(qregion['end']) - int(qregion['start'])) # ArryCGH mode
         step = 1 if size < 500e3 else 5
         if cref:
@@ -353,42 +368,53 @@ def signalProcessor(gene, cr, cref, stats, red=False):
             ref_exon_Max = []
             ref_exon_avg = []
             ref = []
+            FREEZE = False
             gen_cr = cr.focus_single((qregion['chr'],int(qregion['start']),int(qregion['end'])), step = 1)
             for r in cref.focus_single((qregion['chr'],int(qregion['start']),int(qregion['end'])), step = step):
                 rr = r.strip().split()
                 chr,pos = rr[:2]
+                if pos == "33048718":
+                    pass
                 if len(rr[2:])>2:
-                    cov_list = map(float,rr[2:])
+                    cov_list = list(map(float,rr[2:]))
                     stdv = std(cov_list)
                 else:
                     cov_list = float(rr[2])
                     stdv = float(rr[3])
                 mcov = mean(cov_list)
-                ref_exon_min.append(stdv)
-                ref_exon_avg.append(mcov)
-                ref.append(pos)
                 count+=1
-                print"%d\r"%count,
+                #print("%d\r"%count, end=' ')
                 LOOP = False
-                while not LOOP:
+                while not LOOP and not FREEZE:
                     try:
-                        chr, gpos, cov = gen_cr.next().strip().split()
+                        chr, gpos, cov = next(gen_cr).strip().split()
+                        if int(gpos) == (int(pos)+1):
+                            FREEZE = True
+                        
                     except StopIteration:
                         chr, pos, cov = qregion['chr'], pos, 0
                         break
                     LOOP = pos == gpos
-                if red:
-                    cov = float(cov)/2
+                if int(gpos) < int(pos):
+                    FREEZE = False
+                if pos == gpos:
+                    FREEZE = False
+                    ref_exon_min.append(stdv)
+                    ref_exon_avg.append(mcov)
+                    ref.append(pos)
+
+                    if red:
+                        cov = float(cov)/2
                         
-                enlight = -1.5 + calculate_exon(gene, pos) if  (int(pos)>=int(gene['start'])) and (int(pos)<=int(gene['end'])) else 0                                       
-            #data.append((chr,pos,cov))
-                if isnan(float(cov)):
-                    raise("NAN value found! Chr %s Position %s "%(chr,pos))
-                pos_region.append((pos,float(cov)/stats,enlight))
+                    enlight = -1.5 + calculate_exon(gene, pos) if  (int(pos)>=int(gene['start'])) and (int(pos)<=int(gene['end'])) else 0                                       
+                    #data.append((chr,pos,cov))
+                    if isnan(float(cov)):
+                        raise "NAN value found! Chr %s Position %s "
+                    pos_region.append((pos,float(cov)/stats,enlight))
         
         #pos_region = realign(pos_region, ref) 
-        plot_region = map(lambda p:p[1],pos_region)
-        enlight = map(lambda p:p[2],pos_region)
+        plot_region = [p[1] for p in pos_region]
+        enlight = [p[2] for p in pos_region]
         
     if cref:
         plot_region_n = array(plot_region)/array(ref_exon_avg)
@@ -413,20 +439,20 @@ with PdfPages(output_px+'.CMpositives.pdf') as pp:
        WARNING = False
    try:
     if cref:
-	signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, red = False)   
+        signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, red = False)   
         signal = signal + offset
     if options.control:
         csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
         csignal = csignal + offset
     if gene['chr'] == 'chrX':
-            signal = signal/normX
-            csignal = csignal/normCX+1e-4
+        signal = signal/normX
+        csignal = csignal/normCX+1e-4
     sd = array(ref_exon_min)/array(ref_exon_avg)
     genethere = array(enlight)!=0
     
     if sum(abs(signal))>0 and sum(abs(csignal))>0:
         
-        stdM = 1+sd
+        stdM = 1+2*sd
         stdm = 1-sd
         noninfidx = where(abs(signal-1) <= sd)
         ratio = signal/(.001 + csignal)
@@ -436,7 +462,7 @@ with PdfPages(output_px+'.CMpositives.pdf') as pp:
         
         maskp = (approx>1)
         maskm = (approx<1)
-        if ((sum(maskp)+sum(maskm))>0) and (sum(approx*maskp*genethere - maskp*stdM*genethere) > 0) or (-sum(approx*maskm*genethere - maskm*stdm*genethere) > 0):
+        if ((sum(maskp)+sum(maskm))>0) and (sum(signal*maskp*genethere - maskp*stdM*genethere) > 0) or (-sum(signal*maskm*genethere - maskm*stdm*genethere) > 0):
     
             cc = control.tolist()
             cc=[1]+cc+[1]
@@ -445,14 +471,14 @@ with PdfPages(output_px+'.CMpositives.pdf') as pp:
                 if n%2:
                     art_idx = steps[n-1]-500,steps[n]+500
                     art_idx = (max(0,art_idx[0]),min(len(signal)-1,art_idx[1]))
-                    art_idx = range(art_idx[0],art_idx[1]+1)
+                    art_idx = list(range(art_idx[0],art_idx[1]+1))
                     control[art_idx] = 0
 
                     
             approxe = approx*genethere
             control = control*genethere
 
-            if 1 or filter(lambda x:x!=1 and x!=0,approxe*control):
+            if 1 or [x for x in approxe*control if x!=1 and x!=0]:
                 WARNING = True
     
     
@@ -464,7 +490,7 @@ with PdfPages(output_px+'.CMpositives.pdf') as pp:
                 fwigout.write('\n'.join(wig))
                 fwigout.close()
             
-            plt.hold(True)
+            #plt.hold(True)
             plt.subplot(3,1,1)
             plt.title(gene['gene']+' '+gene['chr'])
             plt.plot(enlight, color = 'g', linewidth=1.0 )
@@ -502,7 +528,9 @@ with PdfPages(output_px+'.CMpositives.pdf') as pp:
                 pass
             plt.savefig(pp, format='pdf')
             plt.close()
-   except(e):
-       logreport("Error %s or Gene %s is problematic. Continuing"%(e.str(),gene['gene']),logfile = LOGFILE)
+    else:
+        raise Exception("Gene %s has been skipped"%gene['gene'])
+   except Exception as e:
+       logreport("Error >%s< or Gene %s is problematic. Continuing"%(e,gene['gene']),logfile = LOGFILE)
 logreport("CoverageMaster is done",logfile = LOGFILE)
 

@@ -3,7 +3,7 @@ from optparse import OptionParser
 import sys,os
 
 def index_ucsc(filename):
-    print >>sys.stderr, "Indexing %s \n"%filename
+    #print("Indexing %s \n"%filename, file=sys.stderr)
     chr_list = []
     f=open(filename)
     for l in f:
@@ -47,7 +47,8 @@ class Bisect():
         byte = self.f.read(100)
         while(byte):
             byte = self.f.read(5000)
-            l = self.f.readline()
+            self.f.readline().strip()
+            l = self.f.readline().strip()
             if l:
                 chr = l.split()[0]
                 chr = "chr"+chr.replace("chr","")
@@ -63,18 +64,19 @@ class Bisect():
                 return -1
             return 1
         except:
-            print >> sys.stderr, "Bad chromosome:%s"%chr
+            print("Bad chromosome:%s"%chr)#, file=sys.stderr)
             return 1
     def find(self, chr, start, save_pos = False):  
       
       s = int(start)
       f = self.f
+      f.seek(0)
       DIST = 1e0
       SMALL_JUMP = 5e5
       try:
           self.seek_chr = self.chr_list[self.chr_list.index(chr)]
       except:
-          print >> sys.stderr, "%s not in my list - skipped"%chr
+          print("%s not in my list - skipped"%chr)#, file=sys.stderr)
           return None
       if save_pos and self.seek_chr==self.curr_chr:
           pos = self.pos
@@ -87,7 +89,7 @@ class Bisect():
       
       while 1:
         pos = (pos>0)*pos
-        f.seek(pos), f.readline()
+        f.seek(int(pos)), f.readline()
         _tmp_chr = ""
         while _tmp_chr not in self.chr_list:   #unkn chr - read till a known chr is found
             try:
@@ -113,7 +115,7 @@ class Bisect():
                     #while int(_tmp_s)<s and _tmp_chr == self.seek_chr:
                     #    _tmp_chr,_tmp_s,_tmp_e = f.readline().split()[:3]
                         
-                    print >>sys.stderr,"Ouch!! It is the end of file"
+                    print("Ouch!! It is the end of file")#, file=sys.stderr)
                     self.pos = f.tell()
                     return self.f
                     break                
@@ -157,8 +159,9 @@ class Regions(Bisect):
 
     ###init inherited
     
-    def focus(self, (chr,start,end)):
+    def focus(self, pos):
         '''extract all entries in these boundaries''' 
+        (chr,start,end) = pos
         self.mem_file = []
         chr = chrconv(chr)
         f = self.find(chr,start)
@@ -173,8 +176,9 @@ class Regions(Bisect):
                 #f.close()
                 return
 
-    def focus_single(self, (chr,start,end) , step=1):
+    def focus_single(self, pos , step=1):
       '''extract all entries between given boundaries''' 
+      (chr,start,end) = pos
       self.mem_file = []
       chr = chrconv(chr)
       f = self.find(chr,int(start))
@@ -197,7 +201,41 @@ class Regions(Bisect):
           else:
               pass
 
-    def into(self, (chr,start,end)):
+    def focus_single_prl(self, pos , step=1):
+      '''extract all entries between given boundaries''' 
+      (chr,start,end) = pos
+      self.mem_file = []
+      chr = chrconv(chr)
+      f = self.find(chr,int(start))
+      count = 0
+      value = None
+      try:
+        f.readline()
+        while(1):#for l in f:
+          l = f.readline()
+          fpos = f.tell()
+          count+=1
+          chr_r,e_start = l.split()[:2]
+          chr_r = chrconv(chr_r)
+          if chr == chr_r:
+            if int(start) <= int(e_start) and int(end) >= int(e_start):
+                if count % step == 0:
+                    value = l.strip()
+                    yield value
+                    #print("--%d"%fpos)
+                    if f.tell()!=fpos:
+                        print("CAZZOOOO %d %d"%(f.tell(),fpos))
+                    f.seek(fpos)
+            if int(e_start) > end:
+                return
+          else:
+              if value:
+                  return
+              pass
+      except:
+        pass
+    def into(self, xxx_todo_changeme2):
+        (chr,start,end) = xxx_todo_changeme2
         start = int(start)
         end = int(end)
         off = (end-start)/2
