@@ -103,23 +103,29 @@ class Observations:
 
 ###Viterbi
 def downsample(signal,lev):
+    if lev == 0:
+        return signal
     baseline = 1e-5
     wvfam = "haar"
     #ds = pywt.wavedec(signal+baseline,wvfam,level = lev)[0]
-    ds = pywt.downcoef('a',signal+baseline,wvfam,level = lev)/lev
+    ds = pywt.downcoef('a',signal+baseline,wvfam,level = lev)
     #ds = pywt.upcoef('a',coeffs[0],wvfam,level = 1)
     #ds = (ds-min(ds))*(max(signal)-min(signal))/(max(ds)-min(ds)) + min(signal)
     #if signal[0]:
-    #    ds = ds*signal[0]/ds[0]
+    ds = ds/mean(ds)*mean(signal)
     return ds
 
 def upsample(signal,ln):
-    return repeat(signal,ceil(ln/len(signal)))
+    try:
+        return repeat([1]+signal.tolist(),ceil(ln/len(signal)))
+    except:
+        return repeat([1]+signal,ceil(ln/len(signal)))
+def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
 
-def HMM(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
-    #lev is the parameter -l
+    #minlev = 3 HARDWIRED
+    
     off = .1
-    if len(signal)>1e6:
+    if len(signal)>1e5:
         lev = 12
     
     o1 = [1,1.5,0.5]#[1,1+2*median(std)+2*off,1-2*median(std)-2*off] ##states
@@ -139,17 +145,24 @@ def HMM(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
     fp_list = []
     ZOOM = True
     BEGIN =True
-    while(ZOOM):
+
+    while(ZOOM): ##### ZOOOMING ENABLED!
         pos_states  = downsample(signal,lev)
         M = zeros(len(pos_states))
         path_max = []
         _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
         if BEGIN:
-            trigger =1* array([e[0]<e[1] or e[0]<e[2] for e in _em_v])
+            trigger = 1* array([1.5*(e[0]<e[1]) or 0.5*(e[0]<e[2]) or 1 for e in _em_v])
+            #sensitive to del only
+            trigger = 1* array([0.5*(e[0]<e[2]) or 1 for e in _em_v])
             BEGIN = False
         else:
             trigger = downsample(trigger,lev)
         count = 0
+        '''if not sum(trigger-1):
+            trigger = upsample(trigger,len(signal))[:len(signal)]
+            logreport( "%s:nothing there"%gene, logfile =LOGFILE)
+            return(trigger,o1)'''
         for t in range(1,len(pos_states)):
             #print("%d\r"%count, end=' ')
             #sys.stdout.flush()
@@ -176,15 +189,39 @@ def HMM(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
             trigger = upsample(trigger,len(signal))[:len(signal)]
             if sum(trigger*mask) and sum((approx-1)*trigger) == 0:
                 ZOOM = True
+                signal = signal*(trigger!=1)+1*(trigger==1)
                 lev = lev - 1
-                if lev == 0:
+                if lev < minlev:
                     break
-                logreport( "Zooming %d"%lev, logfile =LOGFILE)
+                logreport( "%s:Zooming %d"%(gene,lev), logfile =LOGFILE)
             else:
                 ZOOM = False
         else:
             break #no zooming for regions
+        if lev > 6: 
+            break #no zooming for big regions
     return(approx,o1) 
+
+def HMM_short(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
+    #lev is the parameter -l
+    off = .1
+    if len(signal)>1e6:
+        lev = 12
+    
+    o1 = [1,1.5,0.5]#[1,1+2*median(std)+2*off,1-2*median(std)-2*off] ##states
+    Obs = Observations(o1) ##to adjust
+    
+    pos_states  = downsample(signal,lev)
+    
+    _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
+    trigger =1* array([1.5*(e[0]<e[1]) or 0.5*(e[0]<e[2]) or 1 for e in _em_v])
+    
+    trigger = upsample(trigger,len(signal))[:len(signal)]
+    mtrigger = (trigger!=1)*(signal!=1)
+    
+    return (trigger*mtrigger+trigger*invert(mtrigger),o1)
+
+
 '''
 ##save_results
 def distance(_fp, pos_meas):

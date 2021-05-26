@@ -72,7 +72,7 @@ class Bisect():
       f = self.f
       f.seek(0)
       DIST = 1e0
-      SMALL_JUMP = 5e5
+      SMALL_JUMP = 1e3#5e5
       try:
           self.seek_chr = self.chr_list[self.chr_list.index(chr)]
       except:

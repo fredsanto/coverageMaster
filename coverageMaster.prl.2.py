@@ -47,9 +47,8 @@ for r in open(wd+"/hg19.exons.merged.bed").read().strip().split('\n'):
 
 qregion = {}
 qregions = []
-wid = 1
-
-
+signalBuffer = {}
+minlev = 0
 
 
 
@@ -66,6 +65,7 @@ parser.add_option("-e",'--exons',  dest="exons", help = " <optional> n. of exons
 parser.add_option("-x",'--offset',  dest="offset", help = " <optional> offset to ref", default = 0)
 parser.add_option("-d",'--width',  dest="wid", help = " <optional> width of std", default = 1) #choose width of sd
 parser.add_option("-l",'--level',  dest="lev", help = " <optional> wavelet level", default = 5) #choose level of compression
+parser.add_option("-m",'--minlevel',  dest="minlev", help = " <optional> min wavelet level", default = 0) #choose level of compression
 parser.add_option("-w",'--wig',  action="store_true", help = " <optional> write wig", default = False)
 parser.add_option("-b",'--bed',  action="store_true", help = " <optional> BED input", default = False)
 (options, args) = parser.parse_args()
@@ -75,6 +75,7 @@ try:
     offset = float(options.offset)
     cov_region = args[0]
     lev = int(options.lev)
+    minlev = int(options.minlev)
     wid = float(options.wid)
     if '.cov' not in cov_region:
         print("\nMichel, please.. not again... use the .cov!\n")
@@ -116,7 +117,7 @@ try:
                 qregions = gene_reference(glist, reference, LOGFILE, int(options.exons))+XIST
             ###here > dump if it is non existing
             try:
-                if not os.path.exists("%s_coderef"%gfilename) and len(qregions) > 50:
+                if not os.path.exists("%s_coderef"%gfilename) and len(qregions) > 0:
                     pickle.dump(qregions,open("%s_coderef"%gfilename,"wb"))
             except:
                 pass #not a glist file
@@ -175,9 +176,9 @@ def processCoverage(gene):#, cr, cref, stats, ccont, cref, cstats, XIST, pp)
     cr.f = open(cr.f.name)
     ccont.f = open(ccont.f.name)
 
-    if cref:
-        signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, red = False)   
-        signal = signal + offset
+    
+    signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, red = False, store = True)   
+    signal = signal + offset
     
     csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
     csignal = csignal + offset
@@ -188,8 +189,8 @@ def processCoverage(gene):#, cr, cref, stats, ccont, cref, cstats, XIST, pp)
     if sum(signal)==0 and sum(csignal)==0: #no coverage
         return "NO COVERAGE"
     elif sum(csignal)==0:
-        logreport("NO Coverage in Control for %s"%gene, logfile=LOGFILE)
-        return "CONTROL NO COVERAGE"
+        logreport("Warning: NO Coverage in Control for %s"%gene, logfile=LOGFILE)
+        return "NO COVERAGE"
         
     sd = array(ref_exon_min)/array(ref_exon_avg)
     genethere = array(enlight)!=0
@@ -207,7 +208,7 @@ def processCoverage(gene):#, cr, cref, stats, ccont, cref, cstats, XIST, pp)
             ratio = zeros(len(signal))
             
         ratio[noninfidx] = 1
-        approx,alev = HMM(ratio,sd, lev = lev, LOGFILE=LOGFILE, mask=genethere)
+        approx,alev = HMM(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev)
         #control,clev = HMM(sd/median(sd),median(sd)*ones(len(sd)), booster = 1000,lev = lev,LOGFILE=LOGFILE)
         maskp = (approx>1)
         maskm = (approx<1)
@@ -241,7 +242,7 @@ def processCoverage(gene):#, cr, cref, stats, ccont, cref, cstats, XIST, pp)
             return([gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg/sum(ref_exon_avg),ratio,call])
  return None
 
-def signalProcessor(gene, cr, cref, stats,LOGFILE=LOGFILE, red=False):
+def signalProcessor(gene, cr, cref, stats,LOGFILE=LOGFILE, red=False, store = False):
  
   if 0 < (int(gene['end'])-int(gene['start'])) and gene['chr']!='chrM':
     if 'query' in gene:
@@ -263,7 +264,7 @@ def signalProcessor(gene, cr, cref, stats,LOGFILE=LOGFILE, red=False):
         gpos = 0
         size = (int(qregion['end']) - int(qregion['start'])) # ArryCGH mode
         step = 1 if size < 500e3 else 5
-        if cref:
+        if not store or (gene['gene'] not in signalBuffer.keys()):
             ref_exon_min = []
             ref_exon_Max = []
             ref_exon_avg = []
@@ -310,17 +311,19 @@ def signalProcessor(gene, cr, cref, stats,LOGFILE=LOGFILE, red=False):
                         raise "NAN value found! Chr %s Position %s "
                     pos_region.append((pos,float(cov)/stats,enlight))
         
-        #pos_region = realign(pos_region, ref) 
-        plot_region = [p[1] for p in pos_region]
-        enlight = [p[2] for p in pos_region]
+            #pos_region = realign(pos_region, ref) 
+            plot_region = [p[1] for p in pos_region]
+            enlight = [p[2] for p in pos_region]
         
-    if cref:
-        plot_region_n = array(plot_region)/array(ref_exon_avg)
-        plot_region_n = array([0 if isnan(i) else i for i in plot_region_n])
-        data_n = [(i[0],i[1],plot_region_n[n]) for n,i in enumerate(pos_region)]
-        return plot_region_n, ref_exon_avg, ref_exon_min, enlight, data_n
-    else:
-        return plot_region
+        
+            plot_region_n = array(plot_region)/array(ref_exon_avg)
+            plot_region_n = array([0 if isnan(i) else i for i in plot_region_n])
+            data_n = [(i[0],i[1],plot_region_n[n]) for n,i in enumerate(pos_region)]
+            if store:
+                signalBuffer[gene["gene"]] = {'plot_region_n':plot_region_n,'ref_exon_avg':ref_exon_avg, "ref_exon_min":ref_exon_min, 'enlight':enlight, 'data_n':data_n}
+            return plot_region_n, ref_exon_avg, ref_exon_min, enlight, data_n
+    sB = signalBuffer[gene["gene"]]
+    return sB['plot_region_n'], sB['ref_exon_avg'], sB['ref_exon_min'], sB['enlight'], ['data_n']
 
 def print_output(glist,fname,round):
     pass
@@ -347,22 +350,24 @@ if __name__ == '__main__':
             normCX = median(control_chrX_region)
  
             logreport("Loop with control %s"%c, logfile = LOGFILE)
-            #processCoverage(qregions[0]) #debug mode
+            processCoverage(qregions[0]) #debug mode
             if sys.version_info[0] < 3:
                 from contextlib import closing
                 with closing(Pool(processes=5)) as p:
                     if len(qregions):
+                        if type(qregions)==type("str"):
+                            pass
                         repository = p.map(processCoverage, qregions)
                         p.terminate()
                     else:
-                        logreport("Problem: empty qregion. try add -b to the command line", logfile = LOGFILE)
+                        logreport("Problem: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
             else:
                 with Pool(5) as p:
                     repository = p.map(processCoverage, qregions)
             
             if repository:
-                qregions_next = [b[0] for b in repository if (b!=None and b!="NO COVERAGE")]
-                qregions_failed += [qregions[q] for q in list(locate(repository,lambda x:x=="NO COVERAGE"))]
+                qregions_next = [b[0] for b in repository if (b!=None and ("NO COVERAGE" not in b))]
+                qregions_failed += [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE" ==  x))]
                 logreport("%s has no coverage"%qregions_failed, logfile=LOGFILE)
                 qregions = qregions_next
             else:
