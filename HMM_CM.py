@@ -73,6 +73,8 @@ def d(i,j):
 def e(i,O,Nstd1 = 7):
     res = []
     os1 = i if i<2 else 2
+    if 0.9<i<1.1:
+        return(array([.5,0,0]))
     for O_state in O.o_states:
         s1 = O_state
         if s1 == max(O.o_states):
@@ -82,8 +84,8 @@ def e(i,O,Nstd1 = 7):
                 p1 = .5
         else:
             p1 = .5-abs(norm(s1,Nstd1).cdf(os1)-0.5) 
-        p = p1
-        res.append(p)
+            
+        res.append(p1)
     return array(res)
 
 
@@ -112,15 +114,27 @@ def downsample(signal,lev):
     #ds = pywt.upcoef('a',coeffs[0],wvfam,level = 1)
     #ds = (ds-min(ds))*(max(signal)-min(signal))/(max(ds)-min(ds)) + min(signal)
     #if signal[0]:
-    ds = ds/mean(ds)*mean(signal)
+    ds = ds/median(ds)*median(signal)
     return ds
+
+def upsample_trigger(signal,ln):
+    signal = around(signal,1)
+    signal_pos = where(signal!=1)[0]
+    try:
+        signal[signal_pos-1]=0.5
+        signal[signal_pos+1]=0.5
+    except:
+        pass #boundaries not amplified
+    return repeat(signal.tolist(),ceil(ln/len(signal)))
 
 def upsample(signal,ln):
     try:
-        return repeat([1]+signal.tolist(),ceil(ln/len(signal)))
+        signal = signal.tolist()
     except:
-        return repeat([1]+signal,ceil(ln/len(signal)))
-def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
+        pass
+    return repeat([1]+signal,ceil(ln/len(signal)))
+    
+def HMM_long(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
 
     #minlev = 3 HARDWIRED
     
@@ -154,15 +168,15 @@ def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev
         if BEGIN:
             trigger = 1* array([1.5*(e[0]<e[1]) or 0.5*(e[0]<e[2]) or 1 for e in _em_v])
             #sensitive to del only
-            trigger = 1* array([0.5*(e[0]<e[2]) or 1 for e in _em_v])
+            #trigger = 1* array([0.5*(e[0]<e[2]) or 1 for e in _em_v])
             BEGIN = False
         else:
             trigger = downsample(trigger,lev)
         count = 0
-        '''if not sum(trigger-1):
+        if not sum(abs(trigger-1)):
             trigger = upsample(trigger,len(signal))[:len(signal)]
             logreport( "%s:nothing there"%gene, logfile =LOGFILE)
-            return(trigger,o1)'''
+            return(trigger,o1)
         for t in range(1,len(pos_states)):
             #print("%d\r"%count, end=' ')
             #sys.stdout.flush()
@@ -186,8 +200,8 @@ def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev
         
         approx = upsample(fp_list,len(signal))[:len(signal)]
         if mask is not None:
-            trigger = upsample(trigger,len(signal))[:len(signal)]
-            if sum(trigger*mask) and sum((approx-1)*trigger) == 0:
+            trigger = upsample_trigger(trigger,len(signal))[:len(signal)]
+            if sum(trigger*mask) and sum((approx-1)*trigger*mask) == 0:
                 ZOOM = True
                 signal = signal*(trigger!=1)+1*(trigger==1)
                 lev = lev - 1
@@ -202,7 +216,7 @@ def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev
             break #no zooming for big regions
     return(approx,o1) 
 
-def HMM_short(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
+def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
     #lev is the parameter -l
     off = .1
     if len(signal)>1e6:
@@ -216,7 +230,7 @@ def HMM_short(signal,std,booster = 1, lev = 5, LOGFILE = "", mask = None):
     _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
     trigger =1* array([1.5*(e[0]<e[1]) or 0.5*(e[0]<e[2]) or 1 for e in _em_v])
     
-    trigger = upsample(trigger,len(signal))[:len(signal)]
+    trigger = upsample_trigger(trigger,len(signal))[:len(signal)]
     mtrigger = (trigger!=1)*(signal!=1)
     
     return (trigger*mtrigger+trigger*invert(mtrigger),o1)
