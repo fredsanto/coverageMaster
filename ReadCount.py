@@ -111,10 +111,6 @@ class Bisect():
                 except:
                     pos-=SMALL_JUMP
                     f.seek(int(pos)), f.readline()
-                    ##close to the end of the file - proceeding line by line
-                    #while int(_tmp_s)<s and _tmp_chr == self.seek_chr:
-                    #    _tmp_chr,_tmp_s,_tmp_e = f.readline().split()[:3]
-                        
                     print("Ouch!! It is the end of file")#, file=sys.stderr)
                     self.pos = f.tell()
                     return self.f
