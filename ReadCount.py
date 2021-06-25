@@ -154,7 +154,10 @@ class Regions(Bisect):
     mem_file = []
 
     ###init inherited
-    
+    def __init__(self, fname):
+        super(Regions, self).__init__(fname)
+        self.create_index()
+
     def focus(self, pos):
         '''extract all entries in these boundaries''' 
         (chr,start,end) = pos

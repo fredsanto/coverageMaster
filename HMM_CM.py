@@ -3,7 +3,8 @@ from numpy import *
 from collections import defaultdict
 from scipy.stats import norm
 import pywt
-from libCoverageMaster import logreport
+from log import logreport
+
 
 def generate_states(off):
     o = []
@@ -134,7 +135,7 @@ def upsample(signal,ln):
         pass
     return repeat([1]+signal,ceil(ln/len(signal)))
     
-def HMM_long(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
+def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
 
     #minlev = 3 HARDWIRED
     
@@ -162,6 +163,7 @@ def HMM_long(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, m
 
     while(ZOOM): ##### ZOOOMING ENABLED!
         pos_states  = downsample(signal,lev)
+        std  = downsample(std_o,lev)
         M = zeros(len(pos_states))
         path_max = []
         _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
