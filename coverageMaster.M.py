@@ -369,7 +369,7 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
             plot_region = [p[1] for p in pos_region]
             enlight = [p[2] for p in pos_region]
         
-        
+            
             plot_region_n = array(plot_region)/array(ref_exon_avg)
             plot_region_n = array([1 if (isnan(i) or isinf(i)) else i for i in plot_region_n])
             data_n = [(i[0],i[1],plot_region_n[n]) for n,i in enumerate(pos_region)]

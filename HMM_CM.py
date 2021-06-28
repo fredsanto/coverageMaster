@@ -141,7 +141,7 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
     
     off = .1
     if len(signal)>1e5:
-        lev = 12
+        lev = 12 #high compression for long regions
     
     o1 = [1,1.5,0.5]#[1,1+2*median(std)+2*off,1-2*median(std)-2*off] ##states
     Obs = Observations(o1) ##to adjust
@@ -149,13 +149,13 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
     pij = zeros((len(Obs.o_states),len(Obs.o_states)))
     
     v = 1*e(Obs.o_states[0],Obs)
-    a = 4.5e-6# 1e-7 #park se o et al. Nat Gen 2010
+    a = 4.5e-6# 1e-7#park se o et al. Nat Gen 2010
     for i,oi in enumerate(Obs.o_states):
         for j,oj in enumerate(Obs.o_states):            
             N = oi
-            pij[i,j] = a*booster#0.00000000001#/(1+d(oi,oj))
+            pij[i,j] = a*booster
             if i==j:
-                pij[i,j] = 1-a*booster #.99999999998#/(1+d(oi,oj))
+                pij[i,j] = 1-a*booster
     
     fp_list = []
     ZOOM = True
@@ -205,6 +205,8 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
             trigger = upsample_trigger(trigger,len(signal))[:len(signal)]
             if sum(trigger*mask) and sum((approx-1)*trigger*mask) == 0:
                 ZOOM = True
+                signal = signal/median(signal) ### signal centering after first inspection (no large aberration detected)
+                
                 signal = signal*(trigger!=1)+1*(trigger==1)
                 lev = lev - 1
                 if lev < minlev:
