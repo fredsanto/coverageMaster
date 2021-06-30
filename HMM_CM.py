@@ -135,7 +135,7 @@ def upsample(signal,ln):
         pass
     return repeat([1]+signal,ceil(ln/len(signal)))
     
-def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
+def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0, orgmedian = 1):
 
     #minlev = 3 HARDWIRED
     
@@ -148,7 +148,8 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
     v = zeros(len(Obs.o_states))
     pij = zeros((len(Obs.o_states),len(Obs.o_states)))
     
-    v = 1*e(Obs.o_states[0],Obs)
+    #v = 1*e(Obs.o_states[0],Obs)
+    v = (1/3,1/3,1/3)
     a = 4.5e-6# 1e-7#park se o et al. Nat Gen 2010
     for i,oi in enumerate(Obs.o_states):
         for j,oj in enumerate(Obs.o_states):            
@@ -167,7 +168,7 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
         M = zeros(len(pos_states))
         path_max = []
         _em_v = [e(pos_states[t],Obs,std[t]) for t in range(0,len(pos_states))]
-        if BEGIN:
+        if 1 or BEGIN:
             trigger = 1* array([1.5*(e[0]<e[1]) or 0.5*(e[0]<e[2]) or 1 for e in _em_v])
             #sensitive to del only
             #trigger = 1* array([0.5*(e[0]<e[2]) or 1 for e in _em_v])
@@ -205,7 +206,7 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
             trigger = upsample_trigger(trigger,len(signal))[:len(signal)]
             if sum(trigger*mask) and sum((approx-1)*trigger*mask) == 0:
                 ZOOM = True
-                signal = signal/median(signal) ### signal centering after first inspection (no large aberration detected)
+                signal = signal/orgmedian ### signal centering after first inspection (no large aberration detected)
                 
                 signal = signal*(trigger!=1)+1*(trigger==1)
                 lev = lev - 1

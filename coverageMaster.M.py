@@ -214,12 +214,13 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
     if len(signal)==len(csignal):
         genename = gene['gene']
         win = 30
+        rang = 1/2
         #wid: parameter -d
         stdM = 1+wid*sd
         stdm = 1-wid*sd
         unormsignal = signal-1
         #noninfidx = where((abs(unormsignal) <= wid*sd) + (unormsignal<=-wid*sd)*(csignal<signal) + (unormsignal>=wid*sd) * (csignal>signal))
-        infidx = where((abs(unormsignal)>1/2)*((unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal)))
+        infidx = where((abs(unormsignal)>rang)*((unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal))) #only abs(deviation) > rang are admitted
         _tmp  = [arange(i-win,i+win) for i in infidx[0] if win<i<(len(signal)-win)]
         infidx = [i for el in _tmp for i in el]
         infidx = [*{*infidx}]# extend the ROI +/-30
@@ -239,13 +240,14 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
             _t['infidx'] = list(set(infidx).intersection(_t['infidx']))
         signalBuffer[genename] = _t
         ratio = ones(len(signal))
+        orgmedian = median(ratiofull)
         ratio[signalBuffer[genename]['infidx']] = ratiofull[signalBuffer[genename]['infidx']]
         #print("sbl %d"%len(signalBuffer[gene['gene']]['noninfidx']))
         try:
             if terminal:
                 approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev)
             else:
-                approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev)
+                approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev, orgmedian = orgmedian)
         except:
             logreport("HMM problem:%s"%gene["gene"],logfile=LOGFILE)
             return None

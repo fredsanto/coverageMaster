@@ -50,22 +50,25 @@ def plotter(repository,output_px, qregions_failed,cgd=""):
   report = open(output_px+".CMreport","w")       
   report2 = open(output_px+".CMcalls","w")       
   cgd_inh = ""
+  
   with PdfPages(output_px+'.CMpositives.pdf') as pp:    
     for box in repository:
       if box and box!="NO COVERAGE":
         gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg,ratio,call = box
+        
         plt.subplot(4,1,1)
         try:
+            callstr = '%s\t%s'%(gene['chr'], gene['gene'])
             for c in call:
                 if len(cgd) and gene['gene'] in cgd.keys():
                     cgd_inh = cgd[gene['gene']]
-                callstr = '%s\t%s\t%s\t%s\t%s\t%s\n'%(gene['chr'], c[1], c[2], c[0],gene['gene'],cgd_inh)
+                    callstr += '\n%s\t%s\t%s\t%s\n'%(c[1], c[2], c[0],cgd_inh)
                 report2.write(callstr)
-                plt.title(callstr.replace("\t"," "))
+                
+                
         except:
             pass
-
-        
+        plt.title(callstr.replace("\t"," "))
         plt.plot(enlight, color = 'g', linewidth=1.0 )
         plt.xticks([], [])
         plt.yticks([], [])
