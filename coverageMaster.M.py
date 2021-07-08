@@ -187,9 +187,10 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
     
     signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, signalBuffer, red = False, store = True)   
     signal = signal + offset
-    
+    #signal=signal-median(signal)+1
     csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
     csignal = csignal + offset
+    #csignal=csignal-median(csignal)+1
     if gene['chr'] == 'chrX':
         signal = signal/normX
         csignal = csignal/normCX+1e-4

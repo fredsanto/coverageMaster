@@ -46,7 +46,7 @@ def wig_writer(chr, data):
             wig.append("%d\t%f"%(int(p), (slope*value)))
     return wig
 
-def plotter(repository,output_px, qregions_failed,cgd=""):
+def plotter(repository,output_px, qregions_failed,cgd={}):
   report = open(output_px+".CMreport","w")       
   report2 = open(output_px+".CMcalls","w")       
   cgd_inh = ""
@@ -55,15 +55,19 @@ def plotter(repository,output_px, qregions_failed,cgd=""):
     for box in repository:
       if box and box!="NO COVERAGE":
         gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg,ratio,call = box
-        
+        callstr_txt = ""
+        if gene["gene"] in cgd.keys():
+            cgd_inh = cgd[gene["gene"]]
+        else:
+            cgd_inh = ""
         plt.subplot(4,1,1)
         try:
-            callstr = '%s\t%s'%(gene['chr'], gene['gene'])
+            callstr = '%s\t%s\t%s'%(gene['chr'], gene['gene'],cgd_inh)
             for c in call:
                 if len(cgd) and gene['gene'] in cgd.keys():
                     cgd_inh = cgd[gene['gene']]
-                    callstr += '\n%s\t%s\t%s\t%s\n'%(c[1], c[2], c[0],cgd_inh)
-                report2.write(callstr)
+                    callstr_txt += callstr +'\t%s\t%s\t%s\t%s\n'%(c[1], c[2], c[0],cgd_inh)
+                report2.write(callstr_txt)
                 
                 
         except:
@@ -115,7 +119,7 @@ def plotter(repository,output_px, qregions_failed,cgd=""):
             plt.plot(ref_exon_avg,'k',linewidth=1.5)
         #convert_approx_to_genome()        
         report.write('%s\n'%gene['gene'])
-        
+        plt.gcf().set_size_inches([7,10])
         plt.savefig(pp, format='pdf')
         plt.close()
   for q in qregions_failed:
