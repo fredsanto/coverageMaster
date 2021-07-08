@@ -11,10 +11,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
 
 wd = os.path.dirname(os.path.abspath(__file__))
-reference = open(wd+"/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
+reference = open(wd+"/REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
 exon_reference = defaultdict(list)
 
-for r in open(wd+"/hg19.exons.merged.bed").read().strip().split('\n'):
+for r in open(wd+"/REF/hg19.exons.merged.bed").read().strip().split('\n'):
     rchr,rstart,rend = r.split()
     exon_reference[rchr].append((rstart,rend))
 
@@ -66,7 +66,7 @@ def plotter(repository,output_px, qregions_failed,cgd={}):
             for c in call:
                 if len(cgd) and gene['gene'] in cgd.keys():
                     cgd_inh = cgd[gene['gene']]
-                    callstr_txt += callstr +'\t%s\t%s\t%s\t%s\n'%(c[1], c[2], c[0],cgd_inh)
+                    callstr_txt += callstr +'\t%s\t%s\t%s\n'%(c[1], c[2], c[0])
                 report2.write(callstr_txt)
                 
                 

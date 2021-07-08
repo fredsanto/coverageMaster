@@ -1,0 +1,34 @@
+Thu Jul  8 17:55:28 2021 - --------------------------------------------------------------------------------
+CoverageMaster is warming up
+Thu Jul  8 17:55:28 2021 - Query index created
+Thu Jul  8 17:55:28 2021 - Reference index created
+Thu Jul  8 17:55:28 2021 - Processing Gene: XIST - Region chrX:73040485-73072588
+Thu Jul  8 17:55:28 2021 - Control index created
+Thu Jul  8 17:55:28 2021 - Processing Gene: XIST - Region chrX:73040485-73072588
+Thu Jul  8 17:55:28 2021 - Loop with control control.PGM1.cov
+Thu Jul  8 17:55:28 2021 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Thu Jul  8 17:55:28 2021 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Thu Jul  8 17:55:29 2021 - PGM1:Zooming 4
+Thu Jul  8 17:55:29 2021 - PGM1:Zooming 3
+Thu Jul  8 17:55:29 2021 - PGM1:Zooming 2
+Thu Jul  8 17:55:29 2021 - PGM1:Zooming 1
+Thu Jul  8 17:55:29 2021 - [] has no coverage
+Thu Jul  8 17:55:29 2021 - N.calls 1
+Thu Jul  8 17:55:29 2021 - CoverageMaster is done
+Thu Jul  8 17:56:23 2021 - --------------------------------------------------------------------------------
+CoverageMaster is warming up
+Thu Jul  8 17:56:23 2021 - Query index created
+Thu Jul  8 17:56:23 2021 - Reference index created
+Thu Jul  8 17:56:23 2021 - Processing Gene: XIST - Region chrX:73040485-73072588
+Thu Jul  8 17:56:23 2021 - Control index created
+Thu Jul  8 17:56:23 2021 - Processing Gene: XIST - Region chrX:73040485-73072588
+Thu Jul  8 17:56:23 2021 - Loop with control control.PGM1.cov
+Thu Jul  8 17:56:23 2021 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Thu Jul  8 17:56:23 2021 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Thu Jul  8 17:56:24 2021 - PGM1:Zooming 4
+Thu Jul  8 17:56:24 2021 - PGM1:Zooming 3
+Thu Jul  8 17:56:24 2021 - PGM1:Zooming 2
+Thu Jul  8 17:56:24 2021 - PGM1:Zooming 1
+Thu Jul  8 17:56:24 2021 - [] has no coverage
+Thu Jul  8 17:56:24 2021 - N.calls 1
+Thu Jul  8 17:56:24 2021 - CoverageMaster is done

@@ -1,71 +1,56 @@
 ''' 
-coverageMaster
+coverageMaster - Main
  - Federico Santoni
-
-* Updates
-  16.09.2016
-     Multiquery
-     Gene list as input and Gene info retrieval
-  1.02.2017
-     Automagic detection HMM based
-  01.07.2020
-     ACGH mode
-     stddev control
 '''
 from optparse import OptionParser
 from glob import glob
 import sys,os,re
-sys.path.append('/home/fsantoni/matplotlib-1.1.0/build/lib.linux-x86_64-2.6')
-sys.path.append('.')
+
 import matplotlib
 matplotlib.use('PDF')
 from pylab import *
 from collections import defaultdict
-from HMM_CM import *
-from ReadCount import *
 import time
 from sympy import Union, Interval, SympifyError
 from multiprocessing import Pool,Manager
 import pickle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from libCoverageMaster import *
 from more_itertools import locate
 from functools import partial
 
+sys.path.append('.')
+from libCoverageMaster import *
+from HMM_CM import *
+from ReadCount import *
 
 
-reference = open(wd+"/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
+'''
+reference = open(wd+"REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
 #reference = open(wd+"/REFSEQ_hg38_HGMD3").read().strip().split('\n')
 exon_reference = defaultdict(list)
 
-for r in open(wd+"/hg19.exons.merged.bed").read().strip().split('\n'):
+for r in open(wd+"REF/hg19.exons.merged.bed").read().strip().split('\n'):
 #for r in open(wd+"/hg38.exons.merged.bed").read().strip().split('\n'):
     rchr,rstart,rend = r.split()
     exon_reference[rchr].append((rstart,rend))
-
-
+'''
 qregion = {}
 qregions = []
-
 minlev = 0
 cgd = {}
-
-
-
-
-usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or gnames comma separated)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
+usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or comma separated gene names)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
 parser = OptionParser(usage = usage)
 parser.add_option("-c",'--control',  dest="control", help = "<optional> txt file with a control file per line (.cov with .report.txt in same folder)")
 parser.add_option("-s",'--single-control',  dest="single_control", help = "<optional> single control file (.cov with .report.txt in same folder)")
 parser.add_option("-r",'--ref',  dest="ref", help = "reference file", default = "")
 parser.add_option("-o",'--out',  dest="output_px", help = "output prefix", default = "")
-parser.add_option("-g",'--cgd',  dest="cgd", help = "clinical genomic database", default = "")
-parser.add_option("-f",'--force',  action="store_true", dest="force", default=False, help = "force output")
-parser.add_option("-e",'--exons',  dest="exons", help = " <optional> n. of exons", default = 5)
+parser.add_option("-g",'--cgd',  dest="cgd", help = "<optional> clinical genomic database", default = "")
+parser.add_option("-f",'--force',  action="store_true", dest="force", default=False, help = "<optional> force output")
+parser.add_option("-e",'--exons',  dest="exons", help = " <optional> n. of extra exons", default = 5)
 parser.add_option("-x",'--offset',  dest="offset", help = " <optional> offset to ref", default = 0)
-parser.add_option("-d",'--width',  dest="wid", help = " <optional> width of std", default = 1) #choose width of sd
-parser.add_option("-l",'--level',  dest="lev", help = " <optional> wavelet level", default = 5) #choose level of compression
+parser.add_option("-d",'--width',  dest="wid", help = " <optional> d*std", default = 1) #choose d*sd
+parser.add_option("-l",'--level',  dest="lev", help = " <optional> max wavelet level", default = 5) #choose level of compression
 parser.add_option("-m",'--minlevel',  dest="minlev", help = " <optional> min wavelet level", default = 0) #choose level of compression
 parser.add_option("-w",'--wig',  action="store_true", help = " <optional> write wig", default = False)
 parser.add_option("-b",'--bed',  action="store_true", help = " <optional> BED input", default = False)
@@ -140,42 +125,22 @@ try:
             
             qregions += XIST
     if not options.ref:
-        print("\nInclude the reference")
-#        raise Exception
-
-#    for f in [stats_file,options.ref,cov_region,options.control,args[2]]:
-#        print("%s - %d"%(f, os.path.isfile(f)))
- 
+        raise Exception("\nPlease include the reference")
     
 except:
-    print("Unexpected error:", sys.exc_info()[0])
+    print("Input error:", sys.exc_info()[0])
     parser.print_help()
     sys.exit(0)
 
 
-n_exons = 0
-total_bp = 0
-
-#report = open(output_px+".CMreport","w")       
-#report2 = open(output_px+".CMexonstruct","w")     
-logreport( "-"*80+"\n"+"CoverageMaster is warming up", logfile =LOGFILE)  
-cr = Regions(cov_region)
-
-logreport( "Query index created", logfile =LOGFILE)
-
-if options.ref:
-    cref = Regions(options.ref)
-    logreport( "Reference index created", logfile = LOGFILE)
-else:
-    cref = None 
 
 
 
 ##main
-def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref, cstats, XIST, pp)
+def processCoverage(terminal,gene,signalBuffer):
 
  time.sleep(.1) 
- #print(signalBuffer.keys())
+ 
  if gene['chr']!='chrM':   
    sys.stdout.flush()
    if 1:#try:
@@ -187,16 +152,16 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
     
     signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, signalBuffer, red = False, store = True)   
     signal = signal + offset
-    #signal=signal-median(signal)+1
+    
     csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
     csignal = csignal + offset
-    #csignal=csignal-median(csignal)+1
+    
     if gene['chr'] == 'chrX':
         signal = signal/normX
         csignal = csignal/normCX+1e-4
 
-    #data that have zero coverage in regions:
-    if sum(signal)==0 and sum(csignal)==0: #no coverage
+    
+    if sum(signal)==0 and sum(csignal)==0: #data that have zero coverage in regions:
         return "NO COVERAGE"
     elif sum(csignal)==0:
         logreport("Warning: NO Coverage in Control for %s"%gene, logfile=LOGFILE)
@@ -220,30 +185,28 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
         stdM = 1+wid*sd
         stdm = 1-wid*sd
         unormsignal = signal-1
-        #noninfidx = where((abs(unormsignal) <= wid*sd) + (unormsignal<=-wid*sd)*(csignal<signal) + (unormsignal>=wid*sd) * (csignal>signal))
+
         infidx = where((abs(unormsignal)>rang)*((unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal))) #only abs(deviation) > rang are admitted
         _tmp  = [arange(i-win,i+win) for i in infidx[0] if win<i<(len(signal)-win)]
         infidx = [i for el in _tmp for i in el]
-        infidx = [*{*infidx}]# extend the ROI +/-30
+        infidx = [*{*infidx}]# extend the ROI +/-win
         try:
             ratiofull = signal/(.001 + csignal)
         except:
             logreport("%s aprox failed. Ratio length inconsistency"%gene, logfile=LOGFILE)
             ratio = zeros(len(signal))
             
-        #ratio[noninfidx] = 1
+
         _t = signalBuffer[genename] # workaround for a bug in python for parallel buffer variables
         if len(_t['infidx']) == 0:
             _t['infidx'] = infidx
-            #_t['infidx'] =  [*{*_t['infidx']}]#unique(array(_t['infidx'])).tolist()
-            #_t['noninfidx'] += noninfidx[0].tolist()
         else:
             _t['infidx'] = list(set(infidx).intersection(_t['infidx']))
         signalBuffer[genename] = _t
         ratio = ones(len(signal))
         orgmedian = median(ratiofull)
         ratio[signalBuffer[genename]['infidx']] = ratiofull[signalBuffer[genename]['infidx']]
-        #print("sbl %d"%len(signalBuffer[gene['gene']]['noninfidx']))
+
         try:
             if terminal:
                 approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev)
@@ -252,30 +215,10 @@ def processCoverage(terminal,gene,signalBuffer):#, cr, cref, stats, ccont, cref,
         except:
             logreport("HMM problem:%s"%gene["gene"],logfile=LOGFILE)
             return None
-        #control,clev = HMM(sd/median(sd),median(sd)*ones(len(sd)), booster = 1000,lev = lev,LOGFILE=LOGFILE)
-        #maskp = (approx>1)
-        #maskm = (approx<1)
+
         mask = (approx!=1)
-        #if FORCE or ((sum(maskp)+sum(maskm))>0 and (sum(signal*maskp*genethere - maskp*stdM*genethere) > 0) or (-sum(signal*maskm*genethere - maskm*stdm*genethere) > 0):
+
         if FORCE or (sum(mask)>0 and sum(signal*mask*genethere)!= 0):
-            
-            '''
-            cc = control.tolist()
-            cc=[1]+cc+[1]
-            steps = where(diff(cc)!=0)[0]
-            for n,i in enumerate(steps):
-                if n%2:
-                    art_idx = steps[n-1]-500,steps[n]+500
-                    art_idx = (max(0,art_idx[0]),min(len(signal)-1,art_idx[1]))
-                    art_idx = list(range(art_idx[0],art_idx[1]+1))
-                    control[art_idx] = 0
-        
-            '''
-            #approxe = approx*genethere
-            #control = control*genethere
-            
-            #if FORCE or [x for x in approxe*control if x!=1 and x!=0]:
-            #print(FORCE)    
     
             if options.wig:
                 wig  = wig_writer(gene["chr"],data_n)
@@ -382,15 +325,22 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
     sB = signalBuffer[gene["gene"]]
     return sB['plot_region_n'], sB['ref_exon_avg'], sB['ref_exon_min'], sB['enlight'], sB['data_n']
 
-def print_output(glist,fname,round):
-    pass
 
 if __name__ == '__main__':
-    
+    logreport( "-"*80+"\n"+"CoverageMaster is warming up", logfile =LOGFILE)  
+    cr = Regions(cov_region)
+    logreport( "Query index created", logfile =LOGFILE)
+    if options.ref:
+        cref = Regions(options.ref)
+        logreport( "Reference index created", logfile = LOGFILE)
+    else:
+        cref = None 
+    ### chrX normalisation
     XIST = qregions.pop()
     plot_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, cr, cref, stats, LOGFILE)   
     normX = median(plot_chrX_region)
     qregions_failed = []
+    #loop over controls
     try:
         signalBuffer = Manager().dict() 
         if options.control:
@@ -403,48 +353,39 @@ if __name__ == '__main__':
             terminal =  n==len(cc)-1  #terminal control loop > Zooming
             cstats = c.replace(".cov","")+".report.txt"
             ccont = Regions(c)
-            
             cstats = extract_tot_reads(open(cstats).read())
             logreport( "Control index created", logfile = LOGFILE)
-
             control_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, ccont, cref, cstats, LOGFILE)
             normCX = median(control_chrX_region)
- 
             logreport("Loop with control %s"%c, logfile = LOGFILE)
-            processCoverage(terminal, qregions[0],signalBuffer) #debug mode
+            #processCoverage(terminal, qregions[0],signalBuffer) #debug mode
             pfunc = partial(processCoverage, terminal, signalBuffer=signalBuffer)
             if sys.version_info[0] < 3:
                 from contextlib import closing
                 with closing(Pool(processes=5)) as p:
                     if len(qregions):
-                        if type(qregions)==type("str"):
-                            pass
-                        
                         repository = p.map(pfunc, qregions)
                         p.terminate()
                     else:
-                        logreport("Problem: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
+                        logreport("Error: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
             else:
                 with Pool(5) as p:
                     repository = p.map(pfunc, qregions)
             
             if repository:
                 qregions_next = [b[0] for b in repository if (b!=None and ("NO COVERAGE" not in b))]
-                #passing_genes = [q["gene"] for q in qregions_next]
                 qregions_failed += [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE" ==  x))]
                 logreport("%s has no coverage"%qregions_failed, logfile=LOGFILE)
                 qregions = qregions_next
             else:
                 break
             logreport("N.calls %d"%len(qregions),logfile=LOGFILE)
-            #print_output(qregions,c)
+            
           if FORCE or len(qregions)==0:
               break
     except:
-        raise("Error in __main__")
+        raise Exception("Error in __main__")
     if repository:
-        #convertHMM(repository[0][6],repository[0][-1])
-        
         plotter(repository, output_px, qregions_failed, cgd)
 logreport("CoverageMaster is done",logfile = LOGFILE)
 
