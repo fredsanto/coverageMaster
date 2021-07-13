@@ -1,6 +1,6 @@
-coverageMaster User Guide
-Introduction
+## coverageMaster User Guide
+# Introduction
 
-Input Requirements
+# Input Requirements
 
-Output
+# Output
