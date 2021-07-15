@@ -25,20 +25,11 @@ from HMM_CM import *
 from ReadCount import *
 
 
-'''
-reference = open(wd+"REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
-#reference = open(wd+"/REFSEQ_hg38_HGMD3").read().strip().split('\n')
-exon_reference = defaultdict(list)
-
-for r in open(wd+"REF/hg19.exons.merged.bed").read().strip().split('\n'):
-#for r in open(wd+"/hg38.exons.merged.bed").read().strip().split('\n'):
-    rchr,rstart,rend = r.split()
-    exon_reference[rchr].append((rstart,rend))
-'''
 qregion = {}
 qregions = []
 minlev = 0
 cgd = {}
+
 usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or comma separated gene names)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
 parser = OptionParser(usage = usage)
 parser.add_option("-c",'--control',  dest="control", help = "<optional> txt file with a control file per line (.cov with .report.txt in same folder)")
@@ -122,7 +113,7 @@ try:
             
             qregions += XIST
     if not options.ref:
-        raise Exception("\nPlease include the reference")
+        raise Exception("Please include the reference")
     
 except:
     print("Input error:", sys.exc_info()[0])
