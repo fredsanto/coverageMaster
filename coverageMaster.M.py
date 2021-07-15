@@ -186,8 +186,6 @@ def processCoverage(terminal,gene,signalBuffer):
         except:
             logreport("%s aprox failed. Ratio length inconsistency"%gene, logfile=LOGFILE)
             ratio = zeros(len(signal))
-            
-
         _t = signalBuffer[genename] # workaround for a bug in python for parallel buffer variables
         if len(_t['infidx']) == 0:
             _t['infidx'] = infidx
@@ -294,19 +292,13 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
                     ref.append(pos)
 
                     if red:
-                        cov = float(cov)/2
-                        
+                        cov = float(cov)/2    
                     enlight = -1.5 + calculate_exon(gene, pos) if  (int(pos)>=int(gene['start'])) and (int(pos)<=int(gene['end'])) else 0                                       
-                    #data.append((chr,pos,cov))
                     if isnan(float(cov)):
-                        raise "NAN value found! Chr %s Position %s "
+                        raise ValueException("NAN value found! Chr %s Position %s")
                     pos_region.append((pos,float(cov)/stats,enlight))
-        
-            #pos_region = realign(pos_region, ref) 
             plot_region = [p[1] for p in pos_region]
             enlight = [p[2] for p in pos_region]
-        
-            
             plot_region_n = array(plot_region)/array(ref_exon_avg)
             plot_region_n = array([1 if (isnan(i) or isinf(i)) else i for i in plot_region_n])
             data_n = [(i[0],i[1],plot_region_n[n]) for n,i in enumerate(pos_region)]
@@ -358,7 +350,7 @@ if __name__ == '__main__':
                         repository = p.map(pfunc, qregions)
                         p.terminate()
                     else:
-                        logreport("Error: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
+                        logreport("Error: Invalid qregion. try to add -b to the command line", logfile = LOGFILE)
             else:
                 with Pool(5) as p:
                     repository = p.map(pfunc, qregions)
