@@ -64,28 +64,26 @@ try:
     minlev = int(options.minlev)
     wid = float(options.wid)
     if '.cov' not in cov_region:
-        print("\nMichel, please.. not again... use the .cov!\n")
-        raise Exception
-    
+        raise Exception("Michel, please.. not again... use the .cov!")
     stats_file = args[1]
     stats = extract_tot_reads(open(stats_file).read())
     FORCE = options.force
     XIST = gene_reference(['XIST'], reference, LOGFILE, int(options.exons))
     
     if args[2][:-1] == "/":
-        raise Exception("GeneList not valid")
+        raise Exception("Invalid gene list")
     if options.cgd:
         with open(options.cgd) as f:
-            for i in f:
+            for ginh in f:
                 try:
-                    gene,inh = i.strip().split()
+                    gene,inh = ginh.strip().split()
                     cgd[gene] = inh
                 except:
-                    print(i)
+                    print(f"Unrecognized in CGD:{ginh}")
     if options.bed: #it's a BED file in input
         for l in open(args[2]):
             qregion = {}
-            qregion['chr'],qregion['start'],qregion['end'] = l.strip().split("\t")[0:3]
+            qregion['chr'], qregion['start'], qregion['end'] = l.strip().split("\t")[0:3]
             qregions.append(qregion)
         qregions += XIST
     elif ":" in args[2]:
@@ -105,12 +103,11 @@ try:
         except:
                 glist = args[2].split(",")
         if ':' not in glist[0]:
-            if os.path.exists("%s_coderef"%gfilename):
+            if os.path.exists("%s_coderef"%gfilename) and len(glist)>1:
                 qregions = pickle.load(open("%s_coderef"%gfilename,"rb"))
             else:
                 qregions = gene_reference(glist, reference, LOGFILE, int(options.exons))+XIST
-            ###here > dump if it is non existing
-            try:
+            try: ### dump if not yet there
                 if not os.path.exists("%s_coderef"%gfilename) and len(qregions) > 0:
                     pickle.dump(qregions,open("%s_coderef"%gfilename,"wb"))
             except:
@@ -140,37 +137,31 @@ except:
 def processCoverage(terminal,gene,signalBuffer):
 
  time.sleep(.1) 
- 
- if gene['chr']!='chrM':   
+ genename = gene['name']
    sys.stdout.flush()
    if 1:#try:
     #reopen for threads purposes
     cref.f = open(cref.f.name)
     cr.f = open(cr.f.name)
     ccont.f = open(ccont.f.name)
-
-    
     signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, signalBuffer, red = False, store = True)   
     signal = signal + offset
-    
     csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
     csignal = csignal + offset
-    
     if gene['chr'] == 'chrX':
         signal = signal/normX
         csignal = csignal/normCX+1e-4
-
-    
     if sum(signal)==0 and sum(csignal)==0: #data that have zero coverage in regions:
+        logreport("Warning: NO Coverage in Signal and Control for %s"%genename, logfile=LOGFILE)
         return "NO COVERAGE"
     elif sum(csignal)==0:
-        logreport("Warning: NO Coverage in Control for %s"%gene, logfile=LOGFILE)
+        logreport("Warning: NO Coverage in Control for %s"%genename, logfile=LOGFILE)
         return "NO COVERAGE"
     if len(signal)<len(csignal):
-        logreport("Warning: Signal < Control %s - correction"%gene, logfile=LOGFILE)
+        logreport("Warning: Signal < Control %s - correction"%genename, logfile=LOGFILE)
         csignal = csignal[:len(signal)]
     if len(signal)>len(csignal): 
-        logreport("Warning: Signal > Control %s - correction"%gene, logfile=LOGFILE)
+        logreport("Warning: Signal > Control %s - correction"%genename, logfile=LOGFILE)
         csignal= csignal.tolist()
         csignal = array(csignal+[1]*(len(signal)-len(csignal)))
 
@@ -178,7 +169,7 @@ def processCoverage(terminal,gene,signalBuffer):
     genethere = array(enlight)!=0
    
     if len(signal)==len(csignal):
-        genename = gene['gene']
+        
         win = 30
         rang = 1/2
         #wid: parameter -d
