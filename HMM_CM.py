@@ -206,7 +206,7 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
             trigger = upsample_trigger(trigger,len(signal))[:len(signal)]
             if sum(trigger*mask) and sum((approx-1)*trigger*mask) == 0:
                 ZOOM = True
-                signal = signal/orgmedian ### signal centering after first inspection (no large aberration detected)
+                #signal = signal-orgmedian+1 ### signal centering after first inspection (no large aberration detected)
                 
                 signal = signal*(trigger!=1)+1*(trigger==1)
                 lev = lev - 1
@@ -241,20 +241,4 @@ def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev
     return (trigger*mtrigger+trigger*invert(mtrigger),o1)
 
 
-'''
-##save_results
-def distance(_fp, pos_meas):
-    min_dist = None
-    for n,genome in enumerate(_fp):
-      dist = 0
-      for CHR in list(genome.keys()):
-       for (path,hmmlev) in genome:
-        res = array([hmmlev[x] for x in path])
-        ps = array([x[1:] for x in pos_meas[CHR]])
-        dist += sum(sum((ps - res)**2))
-      if not min_dist or min_dist[1] > dist:
-          min_dist = (n,dist,genome)
-    return min_dist
-    
-##n,d,final = distance(total_fp_list,pos_meas) #final = final_o1,final_path0
-'''
+
