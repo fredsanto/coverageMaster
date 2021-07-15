@@ -7,6 +7,14 @@ coverageMaster is a copy number variant (CNV) calling algorithm based on depth-o
 ## Method Overview
 
 ## Input Requirements
-The coverage files provided as input to coverageMaster are generated using samtools (samtools depth).
+coverageMaster requires input depth-of-coverage maps to be mapped and processed by external tools. The coverage files provided as input are generated using samtools depth. For each coverage file, a statistics file should be generated using samtools flagstat.
+
+coverageMaster utilizes a reference file with the average coverage and standard deviation of 15-20 samples processed with the same technology. This reference file isgenerated as following:
+* create the coverage and statistics file for each sample with samtools. These pairs of files should be in the same folder.
+* run python create_average_cov.py path_to_input_folder path_to_output_folder
+* for i in $(ls path_to_output_folder); do cat $i >> tmp_ref
+* run python coverage_process_total_ref tmp_ref > path_to_final_output
+
+
 
 ## Output
