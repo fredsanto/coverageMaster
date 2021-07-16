@@ -121,10 +121,6 @@ except:
     sys.exit(0)
 
 
-
-
-
-##main
 def processCoverage(terminal,gene,signalBuffer):
 
  time.sleep(.1) 
