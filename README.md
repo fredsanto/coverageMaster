@@ -33,5 +33,20 @@ BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panels
   
 3) Reference COV creation
 
-3) DEMO running
+3) running DEMO (python > 3.5) - single control (-s)
 
+> cd \<coverageMaster_dir\>
+
+> gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co  -r ref.PGM1 -o test.PGM1
+
+
+Tips
+----
+
+i)    To use more controls, put in the same folder all controls.cov and the related controls.report.txt. Create a txt file with the absolute location of the .cov and use the -c option instead of -s
+
+ii)   to inspect more genes, create a txt file with genes separated by one space or one per line and give the filename as input in the gene position
+
+iii)  to inspect a region just replace $gene with chromosomal position chr:start-end. Zooming is not active for chromosomal position
+
+iv)   to inspect multiple region, create a bed file with one chromosomal position per line and use the option -b 
