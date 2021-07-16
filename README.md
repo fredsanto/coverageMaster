@@ -6,10 +6,15 @@ CoverageMaster provides the graphical representations of the predicted CNVs for 
 Dependencies
 ------------
 The following libraries need to be previously installed:
+
 numpy (>1.16.2)
+
 sympy (>1.0)
+
 PyWavelets (>3.5)
+
 matplotlib (>2.2.3)
+
 scipy (>1.2.1)
 
 
@@ -18,7 +23,15 @@ Quick Start
 
 1) COV file creation
 
-2) Reference COV creation
+BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panels) in .bed format, one region per line
+
+> samtools depth -a -b \<BED\> \<BAM file\> \> \<samplename\>.cov
+
+2) report.txt file creation (stats file)
+  
+> samtools flagstat \<BAM\> > \<samplename\>.report.txt
+  
+3) Reference COV creation
 
 3) DEMO running
 
