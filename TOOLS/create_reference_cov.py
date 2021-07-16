@@ -23,7 +23,7 @@ for CHR in chr_list:
     fout = open(out_dir+'/total_%s.res'%CHR,'w')
     d = defaultdict(list)
     for n,file in enumerate(open_f):
-        #print ("This is:",n)
+        
         START = False
         while 1:
           l = file.readline()
@@ -32,7 +32,7 @@ for CHR in chr_list:
           try:
               chr, pos, cov = l.split()
           except:
-              print l
+              print(l)
           if CHR == chr:
               cov_n = float(cov)/stats[n] ## normalized
               #print (cov_n,cov,stats[n])
@@ -46,4 +46,4 @@ for CHR in chr_list:
               break
     dump(d, fout)
     fout.close()
-+
+
