@@ -21,6 +21,16 @@ scipy (>1.2.1)
 Quick Start
 -----------
 
+running DEMO (python > 3.5) - single control (-s)
+
+> cd \<coverageMaster_dir\>
+
+> gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co  -r ref.PGM1 -o test.PGM1
+
+
+Normal Procedure
+----------------
+
 1) COV file creation
 
 BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panels) in .bed format, one region per line
@@ -33,11 +43,21 @@ BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panels
   
 3) Reference COV creation
 
-3) running DEMO (python > 3.5) - single control (-s)
+  copy or link your COV files in \<COV_folder\>
 
-> cd \<coverageMaster_dir\>
+  create your reference per chromosome
 
-> gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co  -r ref.PGM1 -o test.PGM1
+  > python create_reference_cov.py <COV_folder> 
+
+  concatenate all chromosomes
+
+  > for i in {1..22} X Y; do cat total*chr$i.res >> total_ref ;done
+
+  calculate mean and std 
+
+  > python create_total_ref.py total_ref > total_ref_m_std
+
+3) 
 
 
 Tips
