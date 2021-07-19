@@ -1,16 +1,20 @@
-# CoverageMaster
+coverageMaster User Guide
+================
 
-CoverageMaster is a copy number variant (CNV) calling algorithm based on depth-of-coverage maps to detect CNVs of any size at nucleotide level in Whole Exome Sequencing and Whole Genome Sequencing data. CoverageMaster analyzes the sequencing coverage in a multidimensional Wavelet compressed (nucleotide-like) space and the CNVs are inferred with Hidden Markov Models at the nucleotide-like level in the multiple Wavelet spaces. Through « zooming » across dimensions, this approach enables the punctual analysis of regions with altered depth and the visual inspection of the outcome at nucleotide level to further reduce the false positive rate.   
-CoverageMaster provides the graphical representations of the predicted CNVs for all the genes of interest, and optionally, a wig formatted file compatible with UCSC Genome Browser for detailed coverage visualization of the target regions. 
+## Introduction
+coverageMaster is a copy number variant (CNV) calling algorithm based on depth-of-coverage maps to detect CNVs of any size at nucleotide level in Whole Exome Sequencing and Whole Genome Sequencing data. CoverageMaster analyzes the sequencing coverage in a multidimensional Wavelet compressed (nucleotide-like) space and the CNVs are inferred with Hidden Markov Models at the nucleotide-like level in the multiple Wavelet spaces. Through « zooming » across dimensions, the punctual analysis of regions with altered depth and the visual inspection of the outcome at nucleotide level to further reduce the false positive rate are enabled.   
+coverageMaster provides the graphical representations of the predicted CNVs for all the genes of interest, and optionally, a wig formatted file compatible with UCSC Genome Browser for detailed coverage visualization of the target regions. 
 
 ## Dependencies
+* Python in version >= 3.0.1
 
 The following libraries need to be previously installed:  
-numpy (>1.16.2)  
-sympy (>1.0)  
-PyWavelets (>3.5)  
-matplotlib (>2.2.3)  
-scipy (>1.2.1)
+* numpy (version > 1.16.2)  
+* sympy (version > 1.0)  
+* PyWavelets (version > 3.5)  
+* matplotlib (version > 2.2.3)  
+* scipy (version > 1.2.1)
+* iter_tools (version > )
 
 ## Quick Start
 
@@ -21,20 +25,23 @@ __Running the DEMO (python > 3.5) with one control (-s)__
 > gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co  -r ref.PGM1 -o test.PGM1
 ```
 
-## How to 
+## Input Requirements 
+coverageMaster requires input depth-of-coverage maps to be mapped and processed by external tools.
 
-
-__COV file creation__
+### COV files
+The coverage files provided as input are generated using samtools depth. 
 
 _BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panels) in .bed format, one region per line_  
 
 `> samtools depth -a -b <BED> <BAM> > <samplename>.cov`
 
-__report.txt file creation__
-  
+### Statistics files
+For each coverage file, a statistics file should be generated.
+
 `> samtools flagstat <BAM> > <samplename>.report.txt`
   
-__Reference COV creation__
+### Reference COV file
+coverageMaster utilizes a reference file with the average coverage and standard deviation of a 15-20 samples set. These samples should be processed with the same technology. The reference file is generated as following:
 
   1. copy or link your COV files in \<COV_folder\>
 
@@ -50,12 +57,22 @@ __Reference COV creation__
 
   `> python create_total_ref.py total_ref > total_ref_m_std`
 
-__Standard Usage__  
+## Standard Usage 
 `python coverageMaster.py <samplename>.cov <samplename>.report.txt GENE/GENELIST/REGION/REGIONLIST [-s <control.cov>]|[-c <control_list>]  -r total_ref_m_std -o <output_prefix>`
 
 ## Tips
 
-*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use `-c controls` instead of -s  
-*  to inspect more genes, create a txt file with genes separated by one space or one per line and give the filename as input (e.g `gene=<genelist> && ...` )  
+*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use `-c controls` instead of -s  
+*  to inspect more genes, create a .txt file with genes separated by one space or one per line and give the filename as input (e.g `gene=<genelist> && ...` )  
 *  to inspect a region just replace gene with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position  
 *  to inspect multiple regions, create a bed file with one chromosomal position per line and use `-b <positions>.bed`.  
+
+## Output files
+* __.CMcalls__
+   * jhjdh
+* __.CMpositives.pdf__
+    * Graphical representations of the predicted CNVs for all the genes of interest. In the first plot, the gene's structure in the exonic space is shown. In the second plot, the coverage profiles in the exonic space of the test sample, control and reference are represented, along with the HMM prediction and call.
+* __.CMreport__
+    * List of all the genes for which CNVs have been detected.
+* __.CM.log__
+    * .log file of the run
