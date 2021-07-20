@@ -69,10 +69,10 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 
 ## Output files
 * __.CMcalls__
-    * Position of the detected CNV as: chrom-gene-start-end and inheritance as identified in the Genomic Clinical Database (https://research.nhgri.nih.gov/CGD/)
+    * Position of the detected CNV as: chrom-gene-start-end and inheritance as identified in the Genomic Clinical Database (https://research.nhgri.nih.gov/CGD/).
 * __.CMpositives.pdf__
     * Graphical representations of the predicted CNVs for all the genes of interest. In the first plot, the gene's structure in the exonic space is shown. In the second plot, the coverage profiles in the exonic space of the test sample, control and reference are represented, along with the HMM prediction and call.
 * __.CMreport__
     * List of all the genes for which CNVs have been detected.
 * __.CM.log__
-    * .log file of the run
+    * .log file of the run.
