@@ -6,15 +6,15 @@ coverageMaster is a copy number variant (CNV) calling algorithm based on depth-o
 coverageMaster provides the graphical representations of the predicted CNVs for all the genes of interest, and optionally, a wig formatted file compatible with UCSC Genome Browser for detailed coverage visualization of the target regions. 
 
 ## Dependencies
-* Python in version >= 3.0.1
+* Python in version 3.6.8
 
 The following libraries need to be previously installed:  
-* numpy (version > 1.16.2)  
-* sympy (version > 1.0)  
-* PyWavelets (version > 3.5)  
-* matplotlib (version > 2.2.3)  
-* scipy (version > 1.2.1)
-* iter_tools (version > )
+* numpy (version 1.16.2)  
+* sympy (version 1.0)  
+* PyWavelets (version 3.5)  
+* matplotlib (version 2.2.3)  
+* scipy (version 1.2.1)
+* more_itertools (version 8.8.0)
 
 ## Quick Start
 
@@ -69,7 +69,7 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 
 ## Output files
 * __.CMcalls__
-   * jhjdh
+    * Position of the detected CNV as: chrom-gene-start-end and inheritance as identified in the Genomic Clinical Database (https://research.nhgri.nih.gov/CGD/)
 * __.CMpositives.pdf__
     * Graphical representations of the predicted CNVs for all the genes of interest. In the first plot, the gene's structure in the exonic space is shown. In the second plot, the coverage profiles in the exonic space of the test sample, control and reference are represented, along with the HMM prediction and call.
 * __.CMreport__
