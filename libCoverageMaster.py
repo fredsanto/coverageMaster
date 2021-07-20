@@ -64,12 +64,8 @@ def plotter(repository,output_px, qregions_failed,cgd={}):
         try:
             callstr = '%s\t%s\t%s'%(gene['chr'], gene['gene'],cgd_inh)
             for c in call:
-                if len(cgd) and gene['gene'] in cgd.keys():
-                    cgd_inh = cgd[gene['gene']]
-                    callstr_txt += callstr +'\t%s\t%s\t%s\n'%(c[1], c[2], c[0])
+                callstr_txt = callstr+'\t%s\t%s\t%s\n'%(c[1], c[2], c[0])
                 report2.write(callstr_txt)
-                
-                
         except:
             pass
         plt.title(callstr.replace("\t"," "))
