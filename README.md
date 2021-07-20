@@ -22,7 +22,7 @@ __Running the DEMO (python > 3.5) with one control (-s)__
 
 ```
 > cd <coverageMaster_dir>\DEMO    
-> gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co  -r ref.PGM1 -o test.PGM1
+> gene=PGM1 && co=control.PGM1.cov && python ~/coverageMaster/coverageMaster.py test.PGM1.cov test.PGM1.report.txt $gene -s $co -r ref.PGM1 -o test.PGM1
 ```
 
 ## Input Requirements 
