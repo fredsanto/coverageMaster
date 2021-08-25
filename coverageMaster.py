@@ -61,7 +61,8 @@ try:
     stats_file = args[1]
     stats = extract_tot_reads(open(stats_file).read())
     FORCE = options.force
-    XIST = gene_reference(['XIST'], reference, LOGFILE, int(options.exons))
+    nexons = int(options.exons)
+    XIST = gene_reference(['XIST'], reference, LOGFILE, nexons = nexons)
     
     if args[2][:-1] == "/":
         raise Exception("GeneList not valid")
@@ -96,13 +97,13 @@ try:
         except:
                 glist = args[2].split(",")
         if ':' not in glist[0]:
-            if os.path.exists("%s_coderef"%gfilename):
+            if os.path.exists("%s_coderef"%gfilename) and nexons <= 10:
                 qregions = pickle.load(open("%s_coderef"%gfilename,"rb"))
             else:
-                qregions = gene_reference(glist, reference, LOGFILE, int(options.exons))+XIST
+                qregions = gene_reference(glist, reference, LOGFILE, nexons = nexons)+XIST
             ###here > dump if it is non existing
             try:
-                if not os.path.exists("%s_coderef"%gfilename) and len(qregions) > 0:
+                if not os.path.exists("%s_coderef"%gfilename) and len(qregions) > 0 and nexons <= 10:
                     pickle.dump(qregions,open("%s_coderef"%gfilename,"wb"))
             except:
                 pass #not a glist file
@@ -170,14 +171,15 @@ def processCoverage(terminal,gene,signalBuffer):
    
     if len(signal)==len(csignal):
         genename = gene['gene']
-        win = 30
+        win = 10
         rang = 0.45
         #wid: parameter -d
         stdM = 1+wid*sd
         stdm = 1-wid*sd
         unormsignal = signal-1
+        unormcsignal = csignal-1
 
-        infidx = where((abs(unormsignal)>rang)*((unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal))) #only abs(deviation) > rang are admitted
+        infidx = where((abs(unormsignal)>rang)*((unormsignal>wid*sd)*(csignal<signal) + (unormcsignal>-wid*sd)*(unormsignal<-wid*sd)*(csignal>signal))) #only abs(deviation) > rang are admitted
         _tmp  = [arange(i-win,i+win) for i in infidx[0] if win<i<(len(signal)-win)]
         infidx = [i for el in _tmp for i in el]
         infidx = [*{*infidx}]# extend the ROI +/-win
