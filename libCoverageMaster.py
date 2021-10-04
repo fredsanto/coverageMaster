@@ -202,8 +202,8 @@ def gene_reference(genes, reference, LOGFILE, nexons = 10):
         
         exfirst = g.split('\t')[3]
         exlast = g.split('\t')[4]
-        exstart = list(map(int,g.split('\t')[8].split(',')[:-1])) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
-        exend = list(map(int,g.split('\t')[9].split(',')[:-1])) if len(g.split('\t')[9].split(','))>1 else int(g.split('\t')[9])
+        exstart = list(map(int,g.split('\t')[8].split(',')[:])) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
+        exend = list(map(int,g.split('\t')[9].split(',')[:])) if len(g.split('\t')[9].split(','))>1 else int(g.split('\t')[9])
         newex = union(list(zip(exstart,exend))) if type(exend)==list else [Interval(exstart,exend)] #merge and combine exons from different txs
         exstart = [str(x.start) for x in newex]
         exend = [str(x.end) for x in newex]

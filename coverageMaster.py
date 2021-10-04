@@ -171,15 +171,16 @@ def processCoverage(terminal,gene,signalBuffer):
    
     if len(signal)==len(csignal):
         genename = gene['gene']
-        win = 10
-        rang = 0.45
+        win = 10 # additional nucleotides aside the informative location
+        rang = 0.45 # distance from unity
         #wid: parameter -d
         stdM = 1+wid*sd
         stdm = 1-wid*sd
         unormsignal = signal-1
         unormcsignal = csignal-1
-
-        infidx = where((abs(unormsignal)>rang)*((unormsignal>wid*sd)*(csignal<signal) + (unormcsignal>-wid*sd)*(unormsignal<-wid*sd)*(csignal>signal))) #only abs(deviation) > rang are admitted
+        ## informative locations - contorl is never surmounting signal and contorl is never above wid*std   
+        #infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormcsignal>-wid*sd)*(unormsignal<-wid*sd)*(csignal>signal))) 
+        infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal))) 
         _tmp  = [arange(i-win,i+win) for i in infidx[0] if win<i<(len(signal)-win)]
         infidx = [i for el in _tmp for i in el]
         infidx = [*{*infidx}]# extend the ROI +/-win
