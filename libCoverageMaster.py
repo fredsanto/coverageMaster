@@ -46,7 +46,9 @@ def wig_writer(chr, data):
             wig.append("%d\t%f"%(int(p), (slope*value)))
     return wig
 
-def plotter(repository,output_px, qregions_failed,cgd={}):
+
+def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
+
   report = open(output_px+".CMreport","w")       
   report2 = open(output_px+".CMcalls","w")       
   cgd_inh = ""
@@ -61,14 +63,37 @@ def plotter(repository,output_px, qregions_failed,cgd={}):
         else:
             cgd_inh = ""
         plt.subplot(4,1,1)
+        if dgv_xplr is not None:
+            overlaps = dgv_xplr.get_overlap(chrom=gene['chr'],
+                                            alpha_0=int(gene['start']),
+                                            beta_0=int(gene['end']))
+            if overlaps is not None:
+                freq_results = dgv_xplr.get_freq(overlaps)
+                overlaps["Gain freq."] = freq_results["freq_g"].tolist()
+                #print(overlaps["Gain freq."],overlaps["Name."])
+                overlaps["Loss freq."] = freq_results["freq_l"].tolist()
+                #print(overlaps["Loss freq."])
+                overlaps["Name."] = freq_results["name"].tolist()
+        else:
+            overlaps = None
+
         try:
-            callstr = '%s\t%s\t%s'%(gene['chr'], gene['gene'],cgd_inh)
             for c in call:
-                callstr_txt = callstr+'\t%s\t%s\t%s\n'%(c[1], c[2], c[0])
-                report2.write(callstr_txt)
+                callstr_txt = '%s\t%s\t%s\t%s\t%s\t%s'%(gene['gene'], cgd_inh,gene['chr'],c[0],c[1],c[2])
+                report2.write("%s" % callstr_txt)
+            if overlaps is not None:
+                report2.write("\tGains")
+                for gain, name in zip(overlaps["Gain freq."].values, overlaps["Name."].values):
+                    report2.write("\t%s\t%.3f" % (name,gain))
+                report2.write("\tLosses")
+                for loss,name in zip(overlaps["Loss freq."].values, overlaps["Name."].values):
+                    report2.write("\t%s\t%.3f" % (name,loss))
+                report2.write("\n")
+            else:
+                report2.write("\n")
         except:
             pass
-        plt.title(callstr.replace("\t"," "))
+        plt.title(callstr_txt.replace("\t"," "))
         plt.plot(enlight, color = 'g', linewidth=1.0 )
         plt.xticks([], [])
         plt.yticks([], [])

@@ -23,6 +23,7 @@ sys.path.append('.')
 from libCoverageMaster import *
 from HMM_CM import *
 from ReadCount import *
+from DGVExplorer import DGVExplorer
 
 
 usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or comma separated gene names)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
@@ -40,6 +41,7 @@ parser.add_option("-l",'--level',  dest="lev", help = " <optional> max wavelet l
 parser.add_option("-m",'--minlevel',  dest="minlev", help = " <optional> min wavelet level", default = 0) #choose level of compression
 parser.add_option("-w",'--wig',  action="store_true", help = " <optional> write wig", default = False)
 parser.add_option("-b",'--bed',  action="store_true", help = " <optional> BED input", default = False)
+parser.add_option("-k",'--dgv', help=" <optional> DGV file", type=str, default="")
 (options, args) = parser.parse_args()
 try:
     qregion = {}
@@ -118,7 +120,21 @@ try:
             qregions += XIST
     if not options.ref:
         raise Exception("\nPlease include the reference")
-    
+    dgv_xplr = None
+    if options.dgv:
+        filt_columns = ["#chrom",
+                        "chromStart",
+                        "chromEnd",
+                        "name",
+                        "varType",
+                        "supportingVariants",
+                        "sampleSize",
+                        "observedGains",
+                        "observedLosses"]
+        dgv_xplr = DGVExplorer(file_path=options.dgv,
+                               filt_cols=filt_columns,
+                               chr_idx_path=options.dgv + "_chr_indices.npy")  # Assume that the chr indices are located in the same folder as the DGV file. If not, create them there as well
+
 except:
     print("Input error:", sys.exc_info()[0])
     parser.print_help()
@@ -377,7 +393,8 @@ if __name__ == '__main__':
     except:
         raise Exception("Error in __main__")
     if repository:
-        plotter(repository, output_px, qregions_failed, cgd)
+        plotter(repository, output_px, qregions_failed, cgd, dgv_xplr)
+        
 logreport("CoverageMaster is done",logfile = LOGFILE)
 
         
