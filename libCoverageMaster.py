@@ -79,15 +79,15 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
 
         try:
             for c in call:
-                callstr_txt = '%s\t%s\t%s\t%s\t%s\t%s'%(gene['gene'], cgd_inh,gene['chr'],c[0],c[1],c[2])
+                callstr_txt = '%s\t%s\t%s\t%s\t%s\t%s\t'%(gene['gene'], cgd_inh,gene['chr'],c[0],c[1],c[2])
                 report2.write("%s" % callstr_txt)
             if overlaps is not None:
-                report2.write("\tGains")
+                report2.write("Gains")
                 for gain, name in zip(overlaps["Gain freq."].values, overlaps["Name."].values):
-                    report2.write("\t%s\t%.3f" % (name,gain))
-                report2.write("\tLosses")
+                    report2.write("\t%s\t%.3f\t" % (name,gain))
+                report2.write("Losses")
                 for loss,name in zip(overlaps["Loss freq."].values, overlaps["Name."].values):
-                    report2.write("\t%s\t%.3f" % (name,loss))
+                    report2.write("\t%s\t%.3f\t" % (name,loss))
                 report2.write("\n")
             else:
                 report2.write("\n")
@@ -145,7 +145,8 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
         plt.close()
   for q in qregions_failed:
       report2.write('%s\t%s\t%s\t%s\n'%(q['chr'], q['start'], q['end'], "NO COVERAGE"))    
-  
+  report.close()
+  report2.close()
 
 def exon_boundaries(chr,start,end,exon_reference, nexons=10):
     offset = nexons

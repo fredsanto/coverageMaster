@@ -387,7 +387,8 @@ if __name__ == '__main__':
             else:
                 break
             logreport("N.calls %d"%len(qregions),logfile=LOGFILE)
-            
+            if len(qregions) < 200:
+                plotter(repository, output_px, qregions_failed, cgd, dgv_xplr) ## intermediate result
           if FORCE or len(qregions)==0:
               break
     except:
