@@ -5,6 +5,6 @@ with open(sys.argv[1]) as tot_n:
     for l in tot_n:
         ll = l.strip().split()
         chr, pos = ll[:2]
-        mn = mean(map(float,ll[3:]))
-        st = std(map(float,ll[3:]))
+        mn = mean(list(map(float,ll[3:])))
+        st = std(list(map(float,ll[3:])))
         print ("%s\t%s\t%f\t%f"%(chr,pos,mn,st))

@@ -32,3 +32,25 @@ Thu Jul  8 17:56:24 2021 - PGM1:Zooming 1
 Thu Jul  8 17:56:24 2021 - [] has no coverage
 Thu Jul  8 17:56:24 2021 - N.calls 1
 Thu Jul  8 17:56:24 2021 - CoverageMaster is done
+Mon Jan 24 15:37:30 2022 - --------------------------------------------------------------------------------
+CoverageMaster is warming up
+Mon Jan 24 15:37:30 2022 - Query index created
+Mon Jan 24 15:37:30 2022 - Reference index created
+Mon Jan 24 15:37:30 2022 - Processing Gene: XIST - Region chrX:73040485-73072588
+Mon Jan 24 15:37:47 2022 - --------------------------------------------------------------------------------
+CoverageMaster is warming up
+Mon Jan 24 15:37:47 2022 - Query index created
+Mon Jan 24 15:37:47 2022 - Reference index created
+Mon Jan 24 15:37:47 2022 - Processing Gene: XIST - Region chrX:73040485-73072588
+Mon Jan 24 15:37:47 2022 - Control index created
+Mon Jan 24 15:37:47 2022 - Processing Gene: XIST - Region chrX:73040485-73072588
+Mon Jan 24 15:37:47 2022 - Loop with control control.PGM1.cov
+Mon Jan 24 15:37:47 2022 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Mon Jan 24 15:37:47 2022 - Processing Gene: PGM1 - Region chr1:64058946-64125916
+Mon Jan 24 15:37:48 2022 - PGM1:Zooming 4
+Mon Jan 24 15:37:48 2022 - PGM1:Zooming 3
+Mon Jan 24 15:37:48 2022 - PGM1:Zooming 2
+Mon Jan 24 15:37:48 2022 - PGM1:Zooming 1
+Mon Jan 24 15:37:48 2022 - [] has no coverage
+Mon Jan 24 15:37:48 2022 - N.calls 1
+Mon Jan 24 15:37:49 2022 - CoverageMaster is done

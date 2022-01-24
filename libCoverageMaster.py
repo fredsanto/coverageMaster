@@ -57,7 +57,7 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
     for box in repository:
       if box and box!="NO COVERAGE":
         gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg,ratio,call = box
-        callstr_txt = ""
+        
         if gene["gene"] in cgd.keys():
             cgd_inh = cgd[gene["gene"]]
         else:
@@ -78,9 +78,11 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
             overlaps = None
 
         try:
+            gene_txt = "%s\t%s\t"%(gene['gene'], cgd_inh)
+            call_txt=""
             for c in call:
-                callstr_txt = '%s\t%s\t%s\t%s\t%s\t%s\t'%(gene['gene'], cgd_inh,gene['chr'],c[0],c[1],c[2])
-                report2.write("%s" % callstr_txt)
+                call_txt += '%s\t%s\t%s\t%s\t'%(gene['chr'],c[1],c[2],c[0])
+            report2.write("%s" % gene_txt + call_txt)
             if overlaps is not None:
                 report2.write("Gains")
                 for gain, name in zip(overlaps["Gain freq."].values, overlaps["Name."].values):
@@ -93,7 +95,7 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
                 report2.write("\n")
         except:
             pass
-        plt.title(callstr_txt.replace("\t"," "))
+        plt.title(gene_txt.replace("\t"," ")+"\n"+call_txt)
         plt.plot(enlight, color = 'g', linewidth=1.0 )
         plt.xticks([], [])
         plt.yticks([], [])
@@ -280,85 +282,6 @@ def calculate_exon(gene, pos):
     except:
         return 0
 
-def signalProcessor_old(gene, cr, cref, stats,LOGFILE, red=False):
- 
-  if 0 < (int(gene['end'])-int(gene['start'])) and gene['chr']!='chrM':
-    if 'query' in gene:
-        qregion = gene['query'] 
-        logreport( "Processing Gene: %s - Region %s:%s-%s"%(gene['gene'],gene['chr'],gene['start'],gene['end']), logfile = LOGFILE)
-    else:
-        qregion  = gene
-        qregion['gene']='%s:%s-%s'%(gene['chr'],gene['start'],gene['end'])
-        logreport(  "Processing Region %s:%s-%s"%(qregion['chr'],qregion['start'],qregion['end']),logfile = LOGFILE)
-    data = []
-    if qregion:
-        enlight = []
-        plot_region = []
-        mean_region = []
-        mstd_region = []
-        pstd_region = []
-        pos_region = []
-        count = 0
-        size = (int(qregion['end']) - int(qregion['start'])) # ArryCGH mode
-        step = 1 if size < 500e3 else 5
-        if cref:
-            ref_exon_min = []
-            ref_exon_Max = []
-            ref_exon_avg = []
-            ref = []
-            FREEZE = False
-            gen_cr = cr.focus_single_prl((qregion['chr'],int(qregion['start']),int(qregion['end'])), step = 1)
-            for r in cref.focus_single_prl((qregion['chr'],int(qregion['start']),int(qregion['end'])), step = step):
-                rr = r.strip().split()
-                chr,pos = rr[:2]
-                if len(rr[2:])>2:
-                    cov_list = list(map(float,rr[2:]))
-                    stdv = std(cov_list)
-                else:
-                    cov_list = float(rr[2])
-                    stdv = float(rr[3])
-                mcov = mean(cov_list)
-                count+=1
-                #print("%d\r"%count, end=' ')
-                LOOP = False
-                while not LOOP and not FREEZE:
-                    try:
-                        chr, gpos, cov = next(gen_cr).strip().split()
-                        if int(gpos) == (int(pos)+1):
-                            FREEZE = True
-                        
-                    except StopIteration:
-                        chr, pos, cov = qregion['chr'], pos, 0
-                        break
-                    LOOP = pos == gpos
-                if int(gpos) < int(pos):
-                    FREEZE = False
-                if pos == gpos:
-                    FREEZE = False
-                    ref_exon_min.append(stdv)
-                    ref_exon_avg.append(mcov)
-                    ref.append(pos)
-
-                    if red:
-                        cov = float(cov)/2
-                        
-                    enlight = -1.5 + calculate_exon(gene, pos) if  (int(pos)>=int(gene['start'])) and (int(pos)<=int(gene['end'])) else 0                                       
-                    #data.append((chr,pos,cov))
-                    if isnan(float(cov)):
-                        raise "NAN value found! Chr %s Position %s "
-                    pos_region.append((pos,float(cov)/stats,enlight))
-        
-        #pos_region = realign(pos_region, ref) 
-        plot_region = [p[1] for p in pos_region]
-        enlight = [p[2] for p in pos_region]
-        
-    if cref:
-        plot_region_n = array(plot_region)/array(ref_exon_avg)
-        plot_region_n = array([0 if isnan(i) else i for i in plot_region_n])
-        data_n = [(i[0],i[1],plot_region_n[n]) for n,i in enumerate(pos_region)]
-        return plot_region_n, ref_exon_avg, ref_exon_min, enlight, data_n
-    else:
-        return plot_region
 
 def convertHMM(approx, data_n):
         if not len(data_n):

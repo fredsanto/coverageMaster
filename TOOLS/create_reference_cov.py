@@ -15,7 +15,8 @@ def dump(d, fout):#,control):
 
 dir  = sys.argv[1]
 out_dir = sys.argv[2]
-chr_list  = ['chr%s'%str(i) for i in range(1,23)+['X','Y']]
+#chr_list  = ['chr%s'%str(i) for i in list(range(1,23))+['X','Y']]
+chr_list  = ['chr%s'%str(i) for i in ['X','Y']]
 open_f = [open(f) for f in glob(dir+'/*cov')]
 lopen_f = len(open_f)
 stats = map(extract_tot_reads,[open(f).read() for f in glob(dir+'/*report.txt')])

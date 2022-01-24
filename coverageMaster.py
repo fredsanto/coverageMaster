@@ -187,7 +187,7 @@ def processCoverage(terminal,gene,signalBuffer):
    
     if len(signal)==len(csignal):
         genename = gene['gene']
-        win = 10 # additional nucleotides aside the informative location
+        win = 50 # additional nucleotides aside the informative location
         rang = 0.45 # distance from unity
         #wid: parameter -d
         stdM = 1+wid*sd
@@ -278,8 +278,6 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
                     cov_list = float(rr[2])
                     stdv = float(rr[3])
                 mcov = mean(cov_list)
-                count+=1
-                
                 LOOP = False
                 count=0
                 while not LOOP and not FREEZE:
@@ -365,7 +363,7 @@ if __name__ == '__main__':
             control_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, ccont, cref, cstats, LOGFILE)
             normCX = median(control_chrX_region)
             logreport("Loop with control %s"%c, logfile = LOGFILE)
-            processCoverage(terminal, qregions[0],signalBuffer) #debug mode
+            ###processCoverage(terminal, qregions[0],signalBuffer) #active in debug mode
             pfunc = partial(processCoverage, terminal, signalBuffer=signalBuffer)
             if sys.version_info[0] < 3:
                 from contextlib import closing
