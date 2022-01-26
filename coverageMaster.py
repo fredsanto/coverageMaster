@@ -57,17 +57,21 @@ try:
     minlev = int(options.minlev)
     wid = float(options.wid)
     if '.cov' not in cov_region:
-        print("\nMichel, please.. not again... use the .cov!\n")
-        raise Exception
+        raise Exception("Missing input .cov file")
+        
     
     stats_file = args[1]
-    stats = extract_tot_reads(open(stats_file).read())
+    try:
+        stats = extract_tot_reads(open(stats_file).read())
+    except:
+        raise Exception("stat file %s does not exists"%(stats_file))
+        
     FORCE = options.force
     nexons = int(options.exons)
     XIST = gene_reference(['XIST'], reference, LOGFILE, nexons = nexons)
     
     if args[2][:-1] == "/":
-        raise Exception("GeneList not valid")
+        raise Exception("GeneList is not valid")
     if options.cgd:
         with open(options.cgd) as f:
             for i in f:
@@ -76,7 +80,7 @@ try:
                     cgd[gene] = inh
                 except:
                     print(i)
-    if options.bed: #it's a BED file in input
+    if options.bed: #it's a BED file with regions as input
         for l in open(args[2]):
             qregion = {}
             qregion['chr'],qregion['start'],qregion['end'] = l.strip().split("\t")[0:3]
@@ -136,7 +140,7 @@ try:
                                chr_idx_path=options.dgv + "_chr_indices.npy")  # Assume that the chr indices are located in the same folder as the DGV file. If not, create them there as well
 
 except:
-    print("Input error:", sys.exc_info()[0])
+    print("Input error:", str(sys.exc_info()[1]))
     parser.print_help()
     sys.exit(0)
 
@@ -153,11 +157,12 @@ def processCoverage(terminal,gene,signalBuffer):
    sys.stdout.flush()
    if 1:#try:
     #reopen for threads purposes
-    cref.f = open(cref.f.name)
-    cr.f = open(cr.f.name)
-    ccont.f = open(ccont.f.name)
-
-    
+    try:
+        cref.f = open(cref.f.name)
+        cr.f = open(cr.f.name)
+        ccont.f = open(ccont.f.name)
+    except:
+        raise Exception("Invalid contro/reference files")
     signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, signalBuffer, red = False, store = True)   
     signal = signal + offset
     
