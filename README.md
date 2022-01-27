@@ -63,9 +63,9 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 ## Tips
 
 *  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use `-c controls` instead of -s  
-*  to inspect more genes, create a .txt file with genes separated by one space or one per line and give the filename as input (e.g `gene=<genelist> && ...` )  
-*  to inspect a region just replace gene with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position  
-*  to inspect multiple regions, create a bed file with one chromosomal position per line and use `-b <positions>.bed`.  
+*  to inspect more genes, create a .txt file `genelist` with gene names separated by one space and give the filename as input (e.g `gene=<genelist> && ...` )  
+*  to inspect a chromosomal region just replace `gene` with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position  
+*  to inspect multiple regions, create a bed file `positions.bed` with one chromosomal position per line and use `-b <positions>.bed`. Zooming is not active for this option 
 
 ## Output files
 * __.CMcalls__
@@ -76,3 +76,14 @@ coverageMaster utilizes a reference file with the average coverage and standard 
     * List of all the genes for which CNVs have been detected.
 * __.CM.log__
     * .log file of the run.
+## Docker Image
+ For easy usage, a Docker image of coverageMaster can be created:
+ ```
+ > cd coverageMasterfolder
+ > docker build -t coveragemaster .
+ ```
+ For example, to execute the demo:
+ ```
+ > cd DEMO
+ > gene=PGM1 && co=control.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.PGM1.cov /data/test.PGM1.report.txt $gene -s $co -r /data/ref.PGM1 -o /data/test.PGM1
+ ```
