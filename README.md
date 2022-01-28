@@ -77,11 +77,14 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 * __.CM.log__
     * .log file of the run.
 ## Docker Image
- For easy usage, a Docker image of coverageMaster can be created:
+ To avoid the burden of installing all python library dependencies, a Docker image of coverageMaster can be created:
  ```
- > cd coverageMasterfolder
+ > cd coverageMasterfolder (i.e. where coverageMaster.py is)
  > docker build -t coveragemaster .
  ```
+ coveragemaster image should be now be listed when typing
+ `> docker image ls`
+ 
  For example, to execute the demo:
  ```
  > cd DEMO
