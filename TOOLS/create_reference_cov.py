@@ -26,7 +26,7 @@ for CHR in chr_list:
         
         START = False
         while 1:
-          l = file.readline()
+          l = file.readline().decode("UTF-8")
           if not l:
               break
           try:
