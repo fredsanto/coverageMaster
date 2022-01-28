@@ -15,7 +15,6 @@ def dump(d, fout):#,control):
 
 dir  = sys.argv[1]
 out_dir = sys.argv[2]
-#chr_list  = ['chr%s'%str(i) for i in list(range(1,23))+['X','Y']]
 chr_list  = ['chr%s'%str(i) for i in ['X','Y']]
 open_f = [open(f) for f in glob(dir+'/*cov')]
 lopen_f = len(open_f)
@@ -35,8 +34,7 @@ for CHR in chr_list:
           except:
               print(l)
           if CHR == chr:
-              cov_n = float(cov)/stats[n] ## normalized
-              #print (cov_n,cov,stats[n])
+              cov_n = float(cov)/stats[n] ## normalization by number total reads
               if cov_n>10000:
                   pass
               d[chr+'\t'+pos].append(str(cov_n))
