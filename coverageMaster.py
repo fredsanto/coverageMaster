@@ -49,7 +49,7 @@ try:
     minlev = 0
     cgd = {}
 
-    output_px = options.output_px.split("/")[-1]
+    output_px = options.output_px
     LOGFILE = open(output_px+".CM.log","a")
     offset = float(options.offset)
     cov_region = args[0]
