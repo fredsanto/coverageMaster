@@ -48,7 +48,7 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 
   2. create your reference per chromosome (scripts in TOOLS)
 
-  `> python create_reference_cov.py <COV_folder>`
+  `> python create_reference_cov.py <COV_folder> <OUTP_folder>`
 
   3. concatenate all chromosomes
 
