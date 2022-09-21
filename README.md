@@ -46,13 +46,13 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 
   1. copy or link your COV files in \<COV_folder\>
 
-  2. create your reference per chromosome (scripts in TOOLS)
+  2. create your reference per chromosome after creating your OUTP_folder (scripts in TOOLS)
 
   `> python create_reference_cov.py <COV_folder> <OUTP_folder>`
 
   3. concatenate all chromosomes
 
-  `> for i in {1..22} X Y; do cat total*chr$i.res >> total_ref; done`
+  `> cd <OUTP_folder && for i in {1..22} X Y; do cat total*chr$i.res >> total_ref; done`
 
   4. calculate mean and std 
 
