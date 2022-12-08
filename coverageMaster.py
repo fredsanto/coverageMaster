@@ -202,7 +202,7 @@ def processCoverage(terminal,gene,signalBuffer):
         ## informative locations - contorl is never surmounting signal and contorl is never above wid*std   
         #infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormcsignal>-wid*sd)*(unormsignal<-wid*sd)*(csignal>signal))) 
         infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal)))
-         _tmp  = [arange(i-win,i+win) for i in infidx[0] if ((win<i<(len(signal)-win)) * (not unormcsignal[i]<unormsignal[i]<-wid*sd[i]))] #to avoid extended ROI artifact (DUP)
+        _tmp  = [arange(i-win,i+win) for i in infidx[0] if ((win<i<(len(signal)-win)) * (not unormcsignal[i]<unormsignal[i]<-wid*sd[i]))] #to avoid extended ROI artifact (DUP)
  
         infidx = [i for el in _tmp for i in el]
         infidx = [*{*infidx}]# extend the ROI +/-win
