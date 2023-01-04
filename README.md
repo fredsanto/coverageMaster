@@ -62,12 +62,15 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 `python coverageMaster.py <samplename>.cov <samplename>.report.txt GENE/GENELIST/REGION/REGIONLIST [-s <control.cov>]|[-c <control_list>]  -r total_ref_m_std -o <output_prefix>`
 
 ## Tips
-
-*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use `-c controls` instead of -s  
-*  to inspect more genes, create a .txt file `genelist` with gene names separated by one space and give the filename as input (e.g `gene=<genelist> && ...` )  
-*  to inspect a chromosomal region just replace `gene` with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position  
-*  to inspect multiple regions, create a bed file `positions.bed` with one chromosomal position per line and use `-b <positions>.bed`. Zooming is not active for this option 
-
+*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use `-c controls` instead of -s.  
+*  To inspect more genes, create a .txt file `genelist` with gene names separated by one space and give the filename as input (e.g `gene=<genelist> && ...` ).  
+*  To inspect a chromosomal region, replace `gene` with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position.  
+*  To inspect multiple regions, create a bed file `positions.bed` with one chromosomal position per line and use `-b <positions>.bed`. Zooming is not active for this option. 
+## More Tips
+*  The standard windows size is +/-10 exons from the gene of interest. To extend (or reduce) this window, set -e <number of exons outside the gene>.
+*  To get quickly the coverage plot of a given gene, add -f to the command line. It will produce the coverage plot even if there is no CNV call.
+*  To add the mode of inheritance of all genes from the CGD database (v7.2021) to the coverage plot, use -g <coverageMaster folder>/REF/CGD_07_21.inh.
+*  To speed up the process if you are interested in large CNVs only, set -m 5
 ## Output files
 * __.CMcalls__
     * Position of the detected CNV as: chrom-gene-start-end and inheritance as identified in the Genomic Clinical Database (https://research.nhgri.nih.gov/CGD/).
