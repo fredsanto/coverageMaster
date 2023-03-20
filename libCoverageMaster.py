@@ -9,9 +9,10 @@ import pickle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
-
+from operator import itemgetter
 wd = os.path.dirname(os.path.abspath(__file__))
-reference = open(wd+"/REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
+#reference = open(wd+"/REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
+reference = open(wd+"/REF/REFSEQ_hg19.chr.complete.txt").read().strip().split('\n')
 exon_reference = defaultdict(list)
 
 for r in open(wd+"/REF/hg19.exons.merged.bed").read().strip().split('\n'):
@@ -21,7 +22,8 @@ for r in open(wd+"/REF/hg19.exons.merged.bed").read().strip().split('\n'):
 
 def extract_tot_reads(stats):
     tot_targ_reads =int(re.findall("([0-9]*) \+ 0 *mapped",stats)[0])
-    return tot_targ_reads/100e6
+    tot_dup_reads =int(re.findall("([0-9]*) \+ 0 *duplicates",stats)[0]) #correct for dups
+    return (tot_targ_reads-tot_dup_reads)/100e6
     
 
 def wig_writer(chr, data):
@@ -32,7 +34,7 @@ def wig_writer(chr, data):
     
     for snp in data:
       chr, pos, value = chr, snp[0], snp[2]
-      chr = "chr"+chr.replace("chr","")
+      chr = chr if "MT" in chr else "chr"+chr.replace("chr","") 
       if 1 or float(value)>2:
         head2 = "variableStep chrom=%s span=%d"
         wig.append(head2%(chr,2*span))
@@ -52,11 +54,14 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
   report = open(output_px+".CMreport","w")       
   report2 = open(output_px+".CMcalls","w")       
   cgd_inh = ""
-  
+  try:
+      repository = sorted(repository,key=lambda e:max(e[-1]),reverse=True) #sort by max(QC)
+  except:
+      pass
   with PdfPages(output_px+'.CMpositives.pdf') as pp:    
     for box in repository:
       if box and box!="NO COVERAGE":
-        gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg,ratio,call = box
+        gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg,ratio,call,Q = box
         
         if gene["gene"] in cgd.keys():
             cgd_inh = cgd[gene["gene"]]
@@ -78,11 +83,12 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
             overlaps = None
 
         try:
-            gene_txt = "%s\t%s\t"%(gene['gene'], cgd_inh)
+            gene_txt = "%s\t%s\t%s"%(gene['gene'], cgd_inh,' '.join(map(lambda q:"{q:.2f}".format(q=q),Q)))
             call_txt=""
+            
             for c in call:
                 call_txt += '%s\t%s\t%s\t%s\t'%(gene['chr'],c[1],c[2],c[0])
-            report2.write("%s" % gene_txt + call_txt)
+            report2.write("%s" % (gene_txt + " " + call_txt))
             if overlaps is not None:
                 report2.write("Gains")
                 for gain, name in zip(overlaps["Gain freq."].values, overlaps["Name."].values):
@@ -95,6 +101,7 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
                 report2.write("\n")
         except:
             pass
+        plt.title(gene["gene"])
         plt.title(gene_txt.replace("\t"," ")+"\n"+call_txt)
         plt.plot(enlight, color = 'g', linewidth=1.0 )
         plt.xticks([], [])
@@ -205,17 +212,19 @@ def gene_reference(genes, reference, LOGFILE, nexons = 10):
                 if txs:
                     for t in txs:
                         tt = t.split()
-                        exonst += tt[8].strip(",").split(",")
-                        exonen += tt[9].strip(",").split(",")
-                        tmax = tt if len(tt)>len(tmax) else tmax 
-                        start, end = int(tt[3]),int(tt[4])
-                        maxend = max(maxend, end)
-                        minstart = min(minstart, start)
+                        chr = tt[1]
+                        if len(chr)<6: #remove alterantive chromosomes 
+                            exonst += tt[7].strip(",").split(",")
+                            exonen += tt[8].strip(",").split(",")
+                            tmax = tt if len(tt)>len(tmax) else tmax 
+                            start, end = int(tt[3]),int(tt[4])
+                            maxend = max(maxend, end)
+                            minstart = min(minstart, start)
                     
                     tmax[3] = str(minstart)
                     tmax[4] = str(maxend)
-                    tmax[8] = ','.join(exonst)
-                    tmax[9] = ','.join(exonen)
+                    tmax[7] = ','.join(exonst)
+                    tmax[8] = ','.join(exonen)
                     tfinal = ['\t'.join(tmax)]
                     if maxend-minstart< 3e6:
                         gf.extend(tfinal)
@@ -230,8 +239,8 @@ def gene_reference(genes, reference, LOGFILE, nexons = 10):
         
         exfirst = g.split('\t')[3]
         exlast = g.split('\t')[4]
-        exstart = list(map(int,g.split('\t')[8].split(',')[:])) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
-        exend = list(map(int,g.split('\t')[9].split(',')[:])) if len(g.split('\t')[9].split(','))>1 else int(g.split('\t')[9])
+        exstart = list(map(int,g.split('\t')[7].split(',')[:])) if len(g.split('\t')[7].split(','))>1 else int(g.split('\t')[7])
+        exend = list(map(int,g.split('\t')[8].split(',')[:])) if len(g.split('\t')[8].split(','))>1 else int(g.split('\t')[8])
         newex = union(list(zip(exstart,exend))) if type(exend)==list else [Interval(exstart,exend)] #merge and combine exons from different txs
         exstart = [str(x.start) for x in newex]
         exend = [str(x.end) for x in newex]
