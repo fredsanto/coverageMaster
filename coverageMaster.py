@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from more_itertools import locate
 from functools import partial
-
+from scipy.stats import linregress 
 sys.path.append('.')
 from libCoverageMaster import *
 from HMM_CM import *
@@ -29,7 +29,6 @@ from DGVExplorer import DGVExplorer
 usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or comma separated gene names)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
 parser = OptionParser(usage = usage)
 parser.add_option("-c",'--control',  dest="control", help = "<optional> txt file with a control file per line (.cov with .report.txt in same folder)")
-parser.add_option("-s",'--single-control',  dest="single_control", help = "<optional> single control file (.cov with .report.txt in same folder)")
 parser.add_option("-r",'--ref',  dest="ref", help = "reference file", default = "")
 parser.add_option("-o",'--out',  dest="output_px", help = "output prefix", default = "")
 parser.add_option("-g",'--cgd',  dest="cgd", help = "<optional> clinical genomic database", default = "")
@@ -42,24 +41,25 @@ parser.add_option("-m",'--minlevel',  dest="minlev", help = " <optional> min wav
 parser.add_option("-w",'--wig',  action="store_true", help = " <optional> write wig", default = False)
 parser.add_option("-b",'--bed',  action="store_true", help = " <optional> BED input", default = False)
 parser.add_option("-k",'--dgv', help=" <optional> DGV file", type=str, default="")
+parser.add_option("-T",'--Thr', dest="cT", help=" <optional> Call Threshold", type=float, default=0)
 (options, args) = parser.parse_args()
+
 try:
     qregion = {}
     qregions = []
     minlev = 0
     cgd = {}
-
-    output_px = options.output_px
+    callThreshold = options.cT
+    output_px = options.output_px#.split("/")[-1]
     LOGFILE = open(output_px+".CM.log","a")
     offset = float(options.offset)
     cov_region = args[0]
     lev = int(options.lev)
     minlev = int(options.minlev)
     wid = float(options.wid)
-    if '.cov' not in cov_region:
+    if '.cov' not in cov_region or not os.path.exists(cov_region):
         raise Exception("Missing input .cov file")
         
-    
     stats_file = args[1]
     try:
         stats = extract_tot_reads(open(stats_file).read())
@@ -68,7 +68,7 @@ try:
         
     FORCE = options.force
     nexons = int(options.exons)
-    XIST = gene_reference(['XIST'], reference, LOGFILE, nexons = nexons)
+    XIST = gene_reference(['XIST'], reference, LOGFILE, nexons = 50) #50 is fixed for a more precise coverage estimation
     
     if args[2][:-1] == "/":
         raise Exception("GeneList is not valid")
@@ -79,7 +79,7 @@ try:
                     gene,inh = i.strip().split()
                     cgd[gene] = inh
                 except:
-                    print(i)
+                    pass # print(i)
     if options.bed: #it's a BED file with regions as input
         for l in open(args[2]):
             qregion = {}
@@ -97,7 +97,7 @@ try:
         try:
             gfilename = args[2]
             glistfile = open(gfilename)
-            glist = [x.split()[0] for x in glistfile.read().strip().split(' ')]
+            glist = [x.split()[0] for x in glistfile.read().strip().split(' ') if x!='']
             if len(glist)<2:
                 glist = [x.split("\n") for x in open(args[2]).read().strip().split(' ')][0]
         except:
@@ -105,6 +105,10 @@ try:
         if ':' not in glist[0]:
             if os.path.exists("%s_coderef"%gfilename) and nexons <= 10:
                 qregions = pickle.load(open("%s_coderef"%gfilename,"rb"))
+                if not len(qregions):
+                    qregions = gene_reference(glist, reference, LOGFILE, nexons = nexons)+XIST
+                else:
+                    qregions[-1]=XIST[0]
             else:
                 qregions = gene_reference(glist, reference, LOGFILE, nexons = nexons)+XIST
             ###here > dump if it is non existing
@@ -150,24 +154,24 @@ except:
 
 ##main
 def processCoverage(terminal,gene,signalBuffer):
+        
+ time.sleep(.1) #necessary for thread handling?
 
- time.sleep(.1) 
- 
- if gene['chr']!='chrM':   
+ if 1:
    sys.stdout.flush()
    if 1:#try:
-    #reopen for threads purposes
+    #reopen for thread purposes
     try:
         cref.f = open(cref.f.name)
         cr.f = open(cr.f.name)
         ccont.f = open(ccont.f.name)
     except:
-        raise Exception("Invalid contro/reference files")
+        raise Exception("Invalid control/reference files")
     signal, ref_exon_avg, ref_exon_min, enlight, data_n = signalProcessor(gene, cr, cref, stats, signalBuffer, red = False, store = True)   
     signal = signal + offset
     
     csignal, unused, unused, unused, unused = signalProcessor(gene, ccont, cref, cstats)   
-    csignal = csignal + offset
+    #csignal = csignal + offset #offset to signal only
     
     if gene['chr'] == 'chrX':
         signal = signal/normX
@@ -178,7 +182,7 @@ def processCoverage(terminal,gene,signalBuffer):
         return "NO COVERAGE"
     elif sum(csignal)==0:
         logreport("Warning: NO Coverage in Control for %s"%gene, logfile=LOGFILE)
-        return "NO COVERAGE"
+        return "NO COVERAGE IN CONTROL"
     if len(signal)<len(csignal):
         logreport("Warning: Signal < Control %s - correction"%gene, logfile=LOGFILE)
         csignal = csignal[:len(signal)]
@@ -193,19 +197,19 @@ def processCoverage(terminal,gene,signalBuffer):
     if len(signal)==len(csignal):
         genename = gene['gene']
         win = 50 # additional nucleotides aside the informative location
-        rang = 0.45 # distance from unity
+        rang = 0.4 # distance from ratio == 1
         #wid: parameter -d
         stdM = 1+wid*sd
         stdm = 1-wid*sd
         unormsignal = signal-1
         unormcsignal = csignal-1
-        ## informative locations - contorl is never surmounting signal and contorl is never above wid*std   
+        ## informative locations - control is never abs(over signal) and control is never above abs(wid*std)   
         #infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormcsignal>-wid*sd)*(unormsignal<-wid*sd)*(csignal>signal))) 
-        infidx = where((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal)))
-        _tmp  = [arange(i-win,i+win) for i in infidx[0] if ((win<i<(len(signal)-win)) * (not unormcsignal[i]<unormsignal[i]<-wid*sd[i]))] #to avoid extended ROI artifact (DUP)
- 
-        infidx = [i for el in _tmp for i in el]
-        infidx = [*{*infidx}]# extend the ROI +/-win
+        informative = ((abs(unormsignal)>rang) * ((unormcsignal<wid*sd)*(unormsignal>wid*sd)*(csignal<signal) + (unormsignal<-wid*sd)*(csignal>signal)))
+        
+        infidx_org = where(informative)[0]
+        
+        
         try:
             ratiofull = signal/(.001 + csignal)
         except:
@@ -213,25 +217,70 @@ def processCoverage(terminal,gene,signalBuffer):
             ratio = zeros(len(signal))
             
 
-        _t = signalBuffer[genename] # workaround for a bug in python for parallel buffer variables
+        _t = signalBuffer[genename] # workaround for a bug in python on  buffer variables in parallel tasks
+        
+        
         if len(_t['infidx']) == 0:
-            _t['infidx'] = infidx
+            _t['infidx'] = infidx_org
         else:
-            _t['infidx'] = list(set(infidx).intersection(_t['infidx']))
+            if len(set(infidx_org).intersection(_t['infidx'])):
+                _t['infidx'] = infidx_org
+        
+        _tmp  = [arange(i-win,i+win) for i in _t["infidx"] if ((win<i<(len(signal)-win)) * (not unormcsignal[i]<unormsignal[i]<-wid*sd[i]))] #to avoid extended ROI artifact (DUP)
+        infidx = [i for el in _tmp for i in el]
+        infidx = [*{*infidx}]# extend the ROI +/-win
+
         signalBuffer[genename] = _t
         ratio = ones(len(signal))
         orgmedian = median(ratiofull)
-        ratio[signalBuffer[genename]['infidx']] = ratiofull[signalBuffer[genename]['infidx']]
+        ratio[infidx] = ratiofull[infidx]
 
         try:
             approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev, orgmedian = orgmedian)
         except:
             logreport("HMM problem:%s"%gene["gene"],logfile=LOGFILE)
             return None
-
-        mask = (approx!=1)
-
-        if FORCE or (sum(mask)>0 and sum(signal*mask*genethere)!= 0):
+        
+        detDEL = sum(approx==0.5)
+        detDUP = sum(approx==1.5)
+        if detDEL:
+            delreg_approx = (approx==0.5) if sum((approx==0.5)*informative)/sum(approx==0.5)>0.1 else (approx==0) #overlap between informative and approx must be>10%
+        else:
+            delreg_approx = 0
+        if detDUP:
+            dupreg_approx = (approx==1.5) if sum((approx==1.5)*informative)/sum(approx==1.5)>0.1 else (approx==0) #overlap between informative and approx must be>10%
+        else:
+            dupreg_approx = 0
+        approx = (approx-1)*delreg_approx+(approx-1)*dupreg_approx +1
+        mask = (approx!=1)*1
+        Q = []
+        if sum(mask):
+            dmask = diff(mask)
+            poscalls = where(dmask!=0)[0].tolist()
+            if dmask[poscalls[0]]!=1:
+                poscalls = [0]+poscalls
+            if dmask[poscalls[-1]]!=-1:
+                poscalls = poscalls+[len(mask)-1]
+            ncalls = int(len(poscalls))
+            
+            for i in range(0,ncalls,2):
+                mask_tmp = zeros(len(mask))
+                mask_tmp[poscalls[i]:poscalls[i+1]] = mask[poscalls[i]:poscalls[i+1]]
+                base = mask_tmp*genethere#*informative
+                if sum(base):
+                    psignal = (0.5*(abs(signal-1)>=0.5)+abs(signal-1)*(abs(signal-1)<=0.5))# * base
+                    #detQ = sum(base*.25)
+                    Q.append(float(correlate(psignal, .5*base)/correlate(.5*base,.5*base)))
+                    #detQ = sum(abs(1-approx))
+                    #A = sum(-0.25*base)
+                    #Q = A/detQ if detQ and A>0 else 0
+                else:
+                    Q.append(0)
+                logreport("Call quality:%s - %f"%(gene["gene"],Q[-1]),logfile=LOGFILE)
+            
+        
+        
+        if FORCE or ((sum(mask)>0 and sum(signal*mask*genethere)!= 0) and (max(Q)>callThreshold)): 
     
             if options.wig:
                 wig  = wig_writer(gene["chr"],data_n)
@@ -240,8 +289,8 @@ def processCoverage(terminal,gene,signalBuffer):
                 fwigout.close()
             
             call = convertHMM(approx,data_n)
-            
-            return([gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg/sum(ref_exon_avg),ratio,call])
+            logreport("%s Call:%s"%(genename,call),logfile=LOGFILE)
+            return([gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg/sum(ref_exon_avg),ratio,call,Q])
         else:
             signalBuffer.pop(gene["gene"])
             logreport("Removing %s"%gene["gene"],logfile=LOGFILE)
@@ -265,7 +314,7 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
         count = 0
         gpos = 0
         size = (int(qregion['end']) - int(qregion['start'])) # ArryCGH mode
-        step = 1 if size < 500e3 else 5
+        step = 1 if size < 1e6 else 5
         if not store or (gene['gene'] not in signalBuffer.keys()):
             ref_exon_min = []
             ref_exon_Max = []
@@ -277,12 +326,15 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
             for r in cref.focus_single_prl((qregion['chr'],int(qregion['start']),int(qregion['end'])), step = step):
                 rr = r.strip().split()
                 chr,pos = rr[:2]
-                if len(rr[2:])>2:
+                if len(rr[2:])>3:
                     cov_list = list(map(float,rr[2:]))
                     stdv = std(cov_list)
-                else:
+                elif len(rr[2:])>1:
                     cov_list = float(rr[2])
                     stdv = float(rr[3])
+                else:
+                    cov_list = float(rr[2])/stats
+                    stdv = 1
                 mcov = mean(cov_list)
                 LOOP = False
                 count=0
@@ -338,7 +390,8 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
 
 
 if __name__ == '__main__':
-    logreport( "-"*80+"\n"+"CoverageMaster is warming up", logfile =LOGFILE)  
+    logreport( "-"*80+"\n"+"CoverageMaster is warming up", logfile =LOGFILE)
+    logreport("Coveragemaster run with options:%s %s"%(options,args), logfile=LOGFILE)
     cr = Regions(cov_region)
     logreport( "Query index created", logfile =LOGFILE)
     if options.ref:
@@ -354,13 +407,16 @@ if __name__ == '__main__':
     #loop over controls
     try:
         signalBuffer = Manager().dict() 
-        if options.control:
+        if options.control[-4:]==".cov":
+            cc = [options.control]
+        else:
             cc = open(options.control).read().strip().split("\n")
-        if options.single_control:
-            cc = [options.single_control]
+        cc = list(filter(os.path.exists,cc)) #extracting existing control files only
+        if not(cc):
+            raise Exception("Error: non existing control files")
         for n,c in enumerate(cc):
             
-          if c.split("/")[-1] != cov_region.split("/")[-1]:
+          if c[0]!="#" and c.split("/")[-1] != cov_region.split("/")[-1]:
             terminal =  n==len(cc)-1  #terminal control loop > Zooming
             cstats = c.replace(".cov","")+".report.txt"
             ccont = Regions(c)
@@ -369,7 +425,7 @@ if __name__ == '__main__':
             control_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, ccont, cref, cstats, LOGFILE)
             normCX = median(control_chrX_region)
             logreport("Loop with control %s"%c, logfile = LOGFILE)
-            ###processCoverage(terminal, qregions[0],signalBuffer) #active in debug mode
+            processCoverage(terminal, qregions[0],signalBuffer) #active in debug mode
             pfunc = partial(processCoverage, terminal, signalBuffer=signalBuffer)
             if sys.version_info[0] < 3:
                 from contextlib import closing
@@ -378,28 +434,34 @@ if __name__ == '__main__':
                         repository = p.map(pfunc, qregions)
                         p.terminate()
                     else:
-                        logreport("Error: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
+                        raise Exception("Error: Invalid qregion. try add -b to the command line", logfile = LOGFILE)
             else:
                 with Pool(5) as p:
                     repository = p.map(pfunc, qregions)
             
             if repository:
                 qregions_next = [b[0] for b in repository if (b!=None and ("NO COVERAGE" not in b))]
+                qregions_failed_in_control = [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE IN CONTROL" ==  x))]
                 qregions_failed += [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE" ==  x))]
-                logreport("%s has no coverage"%qregions_failed, logfile=LOGFILE)
-                qregions = qregions_next
+                if qregions_failed:
+                    logreport("%s has no coverage"%qregions_failed, logfile=LOGFILE)
+                qregions = qregions_next + qregions_failed_in_control
+                repository = list(filter(lambda x:x!=[] and x!=None and x!="NO COVERAGE",repository))
+                #repository = list(filter(lambda r:float(r[-1])>callThreshold,repository)) #filter for bad quality calls 
             else:
                 break
-            logreport("N.calls %d"%len(qregions),logfile=LOGFILE)
-            if len(qregions) < 200:
-                plotter(repository, output_px, qregions_failed, cgd, dgv_xplr) ## intermediate result
-          if FORCE or len(qregions)==0:
+            logreport("N.calls %d"%len(repository),logfile=LOGFILE)
+            if len(qregions) < 200 and len(qregions_failed_in_control)==0:
+                plotter(repository, output_px, qregions_failed, cgd, dgv_xplr) ## intermediate results
+            if FORCE or len(qregions)==0:
               break
+        
     except:
-        raise Exception("Error in __main__")
+        raise Exception("Error: something wrong in __main__")
     if repository:
         plotter(repository, output_px, qregions_failed, cgd, dgv_xplr)
-        
+        if not len(qregions_failed_in_control)==0:
+            logreport("WARNING: regions not covered in last control:\n%s"%(str(qregions_failed_in_control)),logfile = LOGFILE)
 logreport("CoverageMaster is done",logfile = LOGFILE)
 
         
