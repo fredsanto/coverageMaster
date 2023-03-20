@@ -2,10 +2,13 @@ import sys
 from numpy import *
 from collections import defaultdict
 from scipy.stats import norm
+from scipy.signal import convolve
+
 import pywt
 from log import logreport
 
-
+def normminmax(s):
+    return((s-min(s))/(max(s)-min(s)))
 def generate_states(off):
     o = []
     for i in range(1,9):
@@ -219,6 +222,9 @@ def HMM_long(signal,std_o,gene, booster = 1, lev = 5, LOGFILE = "", mask = None,
             break #no zooming for regions
         if lev > 6: 
             break #no zooming for big regions
+    
+    
+    
     return(approx,o1) 
 
 def HMM(signal,std,gene, booster = 1, lev = 5, LOGFILE = "", mask = None, minlev = 0):
