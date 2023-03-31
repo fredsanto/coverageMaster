@@ -11,8 +11,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
 from operator import itemgetter
 wd = os.path.dirname(os.path.abspath(__file__))
-#reference = open(wd+"/REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
-reference = open(wd+"/REF/REFSEQ_hg19.chr.complete.txt").read().strip().split('\n')
+reference = open(wd+"/REF/REFSEQ_hg19.chrM.tab.HUGO").read().strip().split('\n')
+#reference = open(wd+"/REF/REFSEQ_hg19.chr.complete.txt").read().strip().split('\n')
 exon_reference = defaultdict(list)
 
 for r in open(wd+"/REF/hg19.exons.merged.bed").read().strip().split('\n'):
