@@ -92,5 +92,5 @@ coverageMaster utilizes a reference file with the average coverage and standard 
  For example, to execute the demo:
  ```
  > cd DEMO
- > gene=PGM1 && co=control.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.PGM1.cov /data/test.PGM1.report.txt $gene -s /data/$co -r /data/ref.PGM1 -o /data/test.PGM1
+ > gene=PGM1 && co=control.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.PGM1.cov /data/test.PGM1.report.txt $gene -c /data/$co -r /data/ref.PGM1 -o /data/test.PGM1
  ```
