@@ -59,7 +59,7 @@ coverageMaster utilizes a reference file with the average coverage and standard 
   `> python create_total_ref.py total_ref > total_ref_m_std`
 
 ## Standard Usage 
-`python coverageMaster.py <samplename>.cov <samplename>.report.txt GENE/GENELIST/REGION/REGIONLIST [-s <control.cov>]|[-c <control_list>]  -r total_ref_m_std -o <output_prefix>`
+`python coverageMaster.py <samplename>.cov <samplename>.report.txt GENE/GENELIST/REGION/REGIONLIST -c <control_list|control.cov>  -r total_ref_m_std -o <output_prefix>`
 
 ## Tips
 *  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use -c controls.  
