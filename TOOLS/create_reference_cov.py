@@ -31,7 +31,6 @@ for CHR in chr_list:
         file.seek(0)
         START = False
         while 1:
-          l = file.readline()
           if not l:
               break
           try:
