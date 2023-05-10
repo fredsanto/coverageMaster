@@ -52,7 +52,7 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 
   3. concatenate all chromosomes
 
-  `> cd <OUTP_folder && for i in {1..22} X Y; do cat total*chr$i.res >> total_ref; done`
+  `> cd <OUTP_folder> && for i in {1..22} X Y; do cat total*chr$i.res >> total_ref; done`
 
   4. calculate mean and std 
 
