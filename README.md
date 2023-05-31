@@ -37,12 +37,12 @@ _BED = location of relevant genomic regions (e.g. REFSEQ or Probes or Gene Panel
 `> samtools depth -a -b <BED> <BAM> > <samplename>.cov`
 
 ### Statistics files
-For each coverage file, a statistics file should be generated.
+For each coverage file, a statistics file is generated as follows:
 
 `> samtools flagstat <BAM> > <samplename>.report.txt`
   
 ### Reference COV file
-coverageMaster utilizes a reference file with the average coverage and standard deviation of a 15-20 samples set. These samples should be processed with the same technology. The reference file is generated as following:
+coverageMaster utilizes a reference file with the average coverage and standard deviation of a 15-20 samples set. These samples hve to be processed with the same technology. The reference file is generated as following:
 
   1. copy or link your COV files in \<COV_folder\>
 
