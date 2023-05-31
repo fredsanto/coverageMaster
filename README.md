@@ -19,7 +19,7 @@ The following libraries need to be previously installed:
 
 ## Quick Start
 
-__Running the DEMO (python > 3.5) with one control (-s)__
+__Running the DEMO (python > 3.5) with one control__
 
 ```
 > cd <coverageMaster_dir>\DEMO    
