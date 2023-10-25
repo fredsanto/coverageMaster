@@ -12,7 +12,7 @@ The following libraries need to be previously installed:
 * numpy (version 1.16.2)  
 * pandas (version 1.1.5)
 * sympy (version 1.0)  
-* PyWavelets (version 3.5)  
+* PyWavelets (version >1.1)  
 * matplotlib (version 2.2.3)  
 * scipy (version 1.2.1)
 * more_itertools (version 8.8.0)
