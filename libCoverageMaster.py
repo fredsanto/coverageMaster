@@ -3,7 +3,7 @@ import sys,os,re
 from HMM_CM import *
 from ReadCount import *
 import time
-
+import gzip
 from multiprocessing import Pool, Manager
 import pickle
 import matplotlib.pyplot as plt
@@ -11,12 +11,19 @@ from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
 from operator import itemgetter
 wd = os.path.dirname(os.path.abspath(__file__))
-reference = open(wd+"/REF/REFSEQ_hg19.chr.complete.txt").read().strip().split('\n')
+
+reference_name = wd+"/REF/REFSEQ_hg38_HGMD3.gz"
+exonref_name = wd+"/REF/hg38.exons.merged.bed"
+
+with gzip.open(reference_name) as fr:
+    reference = fr.read().decode().strip().split('\n')
+    
 exon_reference = defaultdict(list)
 
-for r in open(wd+"/REF/hg19.exons.merged.bed").read().strip().split('\n'):
-    rchr,rstart,rend = r.split()
-    exon_reference[rchr].append((rstart,rend))
+with open(exonref_name) as feref:
+    for r in feref.read().strip().split('\n'):
+        rchr,rstart,rend = r.split()    
+        exon_reference[rchr].append((rstart,rend))
 
 
 def extract_tot_reads(stats):
