@@ -6,7 +6,7 @@ coverageMaster is a copy number variant (CNV) calling algorithm based on depth-o
 coverageMaster provides the graphical representations of the predicted CNVs for all the genes of interest, and optionally, a wig formatted file compatible with UCSC Genome Browser for detailed coverage visualization of the target regions. 
 
 ## Dependencies
-* Python in version 3.6.8
+* Python (version 3.6.8)
 
 The following libraries need to be previously installed:  
 * numpy (version 1.16.2)  
@@ -16,6 +16,9 @@ The following libraries need to be previously installed:
 * matplotlib (version 2.2.3)  
 * scipy (version 1.2.1)
 * more_itertools (version 8.8.0)
+
+## References
+hg38 and hg19 references are available in the ref folder. Current version is set on hg38. To change back to hg19 just modify libcoverageMaster.py.
 
 ## Quick Start
 
