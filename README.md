@@ -3,7 +3,6 @@ coverageMaster User Guide
 ## News
 Now set to hg38
 
-Warning: DEMO is not working (input cobverage still mapped to hg19 - to be updated soon)
 ## Introduction
 coverageMaster is a copy number variant (CNV) calling algorithm based on depth-of-coverage maps to detect CNVs of any size at nucleotide level in Whole Exome Sequencing and Whole Genome Sequencing data. CoverageMaster analyzes the sequencing coverage in a multidimensional Wavelet compressed (nucleotide-like) space and the CNVs are inferred with Hidden Markov Models at the nucleotide-like level. Through « zooming » across dimensions, the punctual analysis of regions with altered depth and the visual inspection of the outcome at nucleotide level to further reduce the false positive rate are enabled.   
 coverageMaster provides the graphical representations of the predicted CNVs for all the genes of interest, and optionally, a wig formatted file compatible with UCSC Genome Browser for detailed coverage visualization of the target regions. 
@@ -98,5 +97,5 @@ coverageMaster utilizes a reference file with the average coverage and standard 
  For example, to execute the demo:
  ```
  > cd DEMO
- > gene=PGM1 && co=control.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.PGM1.cov /data/test.PGM1.report.txt $gene -c /data/$co -r /data/ref.PGM1 -o /data/test.PGM1
+ > gene=PGM1 && co=control.hg38.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.hg38.PGM1.cov /data/test.hg38.PGM1.report.txt $gene -c /data/$co -r /data/ref.hg38.PGM1 -o /data/test.hg38.PGM1
  ```
