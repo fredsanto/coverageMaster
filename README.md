@@ -20,7 +20,11 @@ The following libraries need to be previously installed:
 * more_itertools (version 8.8.0)
 
 ## References
-hg38 and hg19 references are available in the ref folder. Current version is set on hg38. To change back to hg19 just modify libcoverageMaster.py.
+hg38 and hg19 references are available in the ref folder. Current version is set on hg38. To change back to hg19, dowload the corresponding references from REF and modify libcoverageMaster.py as follows: 
+```
+reference_name = wd+"/REF/REFSEQ_hg19.chr.complete.txt"
+exonref_name = wd+"/REF/hg19.exons.merged.bed"
+```
 
 ## Quick Start
 
