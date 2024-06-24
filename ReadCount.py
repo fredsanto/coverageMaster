@@ -7,7 +7,7 @@ def index_ucsc(filename):
     chr_list = []
     f=open(filename)
     for l in f:
-        if l[0] == 'c':
+        if l[0] == 'c' or l[0] == "M":
             chr = l.split()[0]
         else:
             chr = l.split()[2]
@@ -17,7 +17,8 @@ def index_ucsc(filename):
     return chr_list
 
 def chrconv(chr):
-    return "chr"+chr.replace("chr","")
+    chrN = chr if "MT" in chr else "chr"+chr.replace("chr","")
+    return chrN
 
 class Bisect():
     '''
@@ -25,7 +26,7 @@ class Bisect():
     init with the filename
     find (chromosome, start) to get a pointer to the region (need further stream)
     '''
-    chr_list=('chr1','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr2','chr20','chr21','chr22','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chrM','chrX','chrY')
+    chr_list=('chr1','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr2','chr20','chr21','chr22','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chrM','chrX','chrY','MT')
     start = len(chr_list)/2
     end = len(chr_list)
     seek_chr = ""
@@ -47,13 +48,19 @@ class Bisect():
         byte = self.f.read(100)
         while(byte):
             byte = self.f.read(5000)
-            self.f.readline().strip()
-            l = self.f.readline().strip()
-            if l:
-                chr = l.split()[0]
-                chr = "chr"+chr.replace("chr","")
-                if chr in self.chr_list and chr not in new_chr_list:
-                    new_chr_list.append(chr)
+            if len(byte)>1:
+               sbyte = byte.split("\n")
+               li,lf = sbyte[1],sbyte[-2]
+               for l in [li,lf]:
+                try:
+                    chr = l.split()[0]
+                    chr = chrconv(chr)
+                
+                    if chr in self.chr_list and chr not in new_chr_list:
+                        new_chr_list.append(chr)
+                except:
+                    print("End_of_File. Continuing")
+                    
         self.chr_list = new_chr_list
         self.f.seek(0)
         return
