@@ -71,7 +71,7 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 `python coverageMaster.py <samplename>.cov <samplename>.report.txt GENE/GENELIST/REGION/REGIONLIST -c <control_list|control.cov>  -r total_ref_m_std -o <output_prefix>`
 
 ## Tips
-*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder > controls`) and use -c controls.  
+*  To compare with more controls, put  all controls.cov and the related controls.report.txt in the same folder. Create a .txt file with the absolute location of the .cov files (e.g. `ls -1 COV_folder/*cov > controls`) and use -c controls.  
 *  To inspect more genes, create a .txt file `genelist` with gene names separated by one space and give the filename as input instead of the gene name.  
 *  To inspect a chromosomal region, replace `gene` with chromosomal position chr:start-end (e.g `gene=chr1:123456-234567 && ...`). Zooming is not active for chromosomal position.  
 *  To inspect multiple regions, create a bed file `positions.bed` with one chromosomal position per line and use `-b <positions>.bed`. Zooming is not active for this option. 
