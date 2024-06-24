@@ -11,24 +11,24 @@ from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
 from operator import itemgetter
 wd = os.path.dirname(os.path.abspath(__file__))
+reference_name = wd+"/REF/REFSEQ_hg19.chr.complete.txt.gz"
+exonref_name = wd+"/REF/hg19.exons.merged.bed"
 
-reference_name = wd+"/REF/REFSEQ_hg38_HGMD3.gz"
-exonref_name = wd+"/REF/hg38.exons.merged.bed"
 
 with gzip.open(reference_name) as fr:
     reference = fr.read().decode().strip().split('\n')
-    
-exon_reference = defaultdict(list)
+#reference = open(reference_name).read().strip().split('\n')
 
-with open(exonref_name) as feref:
-    for r in feref.read().strip().split('\n'):
-        rchr,rstart,rend = r.split()    
-        exon_reference[rchr].append((rstart,rend))
+exon_reference = defaultdict(list)
+for r in open(exonref_name).read().strip().split('\n'):
+    rchr,rstart,rend = r.split()
+    exon_reference[rchr].append((rstart,rend))
 
 
 def extract_tot_reads(stats):
     tot_targ_reads =int(re.findall("([0-9]*) \+ 0 *mapped",stats)[0])
     tot_dup_reads =int(re.findall("([0-9]*) \+ 0 *duplicates",stats)[0]) #correct for dups
+    tot_dup_reads = 0
     return (tot_targ_reads-tot_dup_reads)/100e6
     
 
@@ -47,7 +47,7 @@ def wig_writer(chr, data):
         slope = 0
         for p in range(int(pos)-int(span), int(pos)+int(span)):
             if p!=float(pos):
-                #slope += 1/span
+                
                 slope = 0
             else:
                 slope = 1
@@ -93,7 +93,8 @@ def plotter(repository,output_px, qregions_failed,cgd={}, dgv_xplr=None):
             call_txt=""
             
             for c in call:
-                call_txt += '%s\t%s\t%s\t%s\t'%(gene['chr'],c[1],c[2],c[0])
+                size = int(c[2])-int(c[1])
+                call_txt += '%s\t%s\t%s\t%s\t%s\t'%(gene['chr'],c[1],c[2],c[0],size)
             report2.write("%s" % (gene_txt + " " + call_txt))
             if overlaps is not None:
                 report2.write("Gains")
@@ -315,7 +316,9 @@ def convertHMM(approx, data_n):
             if dd[el[0]]==dd[el[1]]:
                 mut="ERROR"
             try:
-                call.append((mut,data_n[el[0]][0],data_n[el[1]-1][0]))
+                coords = (data_n[el[0]][0],data_n[el[1]-1][0])
+                size = int(coords[1])-int(coords[0])
+                call.append((mut,data_n[el[0]][0],data_n[el[1]-1][0],str(size)))
             except:
                 pass
                 print("Problem %s - %s"%(str(el),str(data_n)))
