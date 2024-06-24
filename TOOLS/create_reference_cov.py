@@ -7,7 +7,8 @@ from glob import glob
 def extract_tot_reads(stats):
     try:
         tot_targ_reads = int(re.findall("([0-9]*).+[0/9].mapped",stats)[0])
-        return tot_targ_reads/100e6
+        tot_dup_reads =int(re.findall("([0-9]*) \+ 0 *duplicates",stats)[0]) #correct for dups
+        return (tot_targ_reads-tot_dup_reads)/100e6
     except:
         return 0
 
@@ -18,8 +19,7 @@ def dump(d, fout):#,control):
 
 dir  = sys.argv[1]
 out_dir = sys.argv[2]
-chr_list  = ['chr%s'%str(i) for i in list(range(1,23))+['X','Y']]
-#chr_list  = ['chr%s'%str(i) for i in ['X','Y']]
+chr_list  = ['chr%s'%str(i) for i in list(range(1,23))+['X','Y']]+["MT"]
 open_f = [open(f,"rb") for f in glob(dir+'/*cov')[:50]]
 lopen_f = len(open_f)
 stats = list(map(extract_tot_reads,[open(f).read() for f in glob(dir+'/*report.txt')[:50]]))
@@ -31,7 +31,7 @@ for CHR in chr_list:
         file.seek(0)
         START = False
         while 1:
-          l = file.readline()
+          l = file.readline().decode()
           if not l:
               break
           try:
@@ -51,3 +51,4 @@ for CHR in chr_list:
               break
     dump(d, fout)
     fout.close()
+
