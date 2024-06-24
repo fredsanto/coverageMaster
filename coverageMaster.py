@@ -37,6 +37,7 @@ parser.add_option("-e",'--exons',  dest="exons", help = " <optional> n. of extra
 parser.add_option("-x",'--offset',  dest="offset", help = " <optional> offset to ref", default = 0)
 parser.add_option("-d",'--width',  dest="wid", help = " <optional> d*std", default = 1) #choose d*sd
 parser.add_option("-l",'--level',  dest="lev", help = " <optional> max wavelet level", default = 5) #choose level of compression
+parser.add_option("-n",'--nproc',  dest="nproc", help = " <optional> number of cores", default = 5) #choose level of compression
 parser.add_option("-m",'--minlevel',  dest="minlev", help = " <optional> min wavelet level", default = 0) #choose level of compression
 parser.add_option("-w",'--wig',  action="store_true", help = " <optional> write wig", default = False)
 parser.add_option("-b",'--bed',  action="store_true", help = " <optional> BED input", default = False)
@@ -45,6 +46,7 @@ parser.add_option("-T",'--Thr', dest="cT", help=" <optional> Call Threshold", ty
 (options, args) = parser.parse_args()
 
 try:
+    NPROC = int(options.nproc)
     qregion = {}
     qregions = []
     minlev = 0
@@ -236,7 +238,7 @@ def processCoverage(terminal,gene,signalBuffer):
         ratio[infidx] = ratiofull[infidx]
 
         try:
-            approx,alev = HMM_long(ratio,sd,gene["gene"], lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev, orgmedian = orgmedian)
+            approx,alev = HMM_long(ratio,sd,gene["gene"],booster = 1, lev = lev, LOGFILE=LOGFILE, mask=genethere, minlev = minlev, orgmedian = orgmedian)
         except:
             logreport("HMM problem:%s"%gene["gene"],logfile=LOGFILE)
             return None
@@ -280,16 +282,16 @@ def processCoverage(terminal,gene,signalBuffer):
             
         
         
-        if FORCE or ((sum(mask)>0 and sum(signal*mask*genethere)!= 0) and (max(Q)>callThreshold)): 
+        if FORCE or options.wig or ((sum(mask)>0 and sum(signal*mask*genethere)!= 0) and (max(Q)>callThreshold)): 
     
             if options.wig:
                 wig  = wig_writer(gene["chr"],data_n)
                 fwigout = open(output_px+'_'+gene['gene']+'.wig','w')
                 fwigout.write('\n'.join(wig))
                 fwigout.close()
-            
             call = convertHMM(approx,data_n)
-            logreport("%s Call:%s"%(genename,call),logfile=LOGFILE)
+            LONG = "LONG" if any([int(c[-1])> 1e5 for c in call]) else ""
+            logreport("%s Call:%s %s"%(genename,call,LONG),logfile=LOGFILE)
             return([gene,signal,csignal,enlight,stdm,stdM,approx,ref_exon_avg/sum(ref_exon_avg),ratio,call,Q])
         else:
             signalBuffer.pop(gene["gene"])
@@ -361,6 +363,9 @@ def signalProcessor(gene, cr, cref, stats, signalBuffer = None, LOGFILE=LOGFILE,
                 if pos == gpos:
                     FREEZE = False
                     FREEZE_B = False
+                    if stdv == 0:
+                         #logreport("Error: stdv == 0 in %s"%(qregion), logfile=LOGFILE)
+                         stdv = 1
                     ref_exon_min.append(stdv)
                     ref_exon_avg.append(mcov)
                     ref.append(pos)
@@ -401,6 +406,7 @@ if __name__ == '__main__':
         cref = None 
     ### chrX normalisation
     XIST = qregions.pop()
+    
     plot_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, cr, cref, stats, LOGFILE)   
     normX = median(plot_chrX_region)
     qregions_failed = []
@@ -422,6 +428,7 @@ if __name__ == '__main__':
             ccont = Regions(c)
             cstats = extract_tot_reads(open(cstats).read())
             logreport( "Control index created", logfile = LOGFILE)
+        
             control_chrX_region, unused, unused, unused, unused = signalProcessor(XIST, ccont, cref, cstats, LOGFILE)
             normCX = median(control_chrX_region)
             logreport("Loop with control %s"%c, logfile = LOGFILE)
@@ -429,7 +436,7 @@ if __name__ == '__main__':
             pfunc = partial(processCoverage, terminal, signalBuffer=signalBuffer)
             if sys.version_info[0] < 3:
                 from contextlib import closing
-                with closing(Pool(processes=5)) as p:
+                with closing(Pool(processes=NPROC)) as p:
                     if len(qregions):
                         repository = p.map(pfunc, qregions)
                         p.terminate()
@@ -451,9 +458,9 @@ if __name__ == '__main__':
             else:
                 break
             logreport("N.calls %d"%len(repository),logfile=LOGFILE)
-            if len(qregions) < 200 and len(qregions_failed_in_control)==0:
+            if len(qregions) < 400 and len(qregions_failed_in_control)==0:
                 plotter(repository, output_px, qregions_failed, cgd, dgv_xplr) ## intermediate results
-            if FORCE or len(qregions)==0:
+            if FORCE or options.wig or len(qregions)==0:
               break
         
     except:
