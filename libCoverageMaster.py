@@ -11,8 +11,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 from log import logreport
 from operator import itemgetter
 wd = os.path.dirname(os.path.abspath(__file__))
-reference_name = wd+"/REF/REFSEQ_hg19.chr.complete.txt.gz"
-exonref_name = wd+"/REF/hg19.exons.merged.bed"
+
+###hg38 - default
+reference_name = wd+"/REF/REFSEQ_hg38_HGMD3.gz"
+exonref_name = wd+"/REF/hg38.exons.merged.bed"
+
+###hg19 
+#reference_name = wd+"/REF/REFSEQ_hg19.chr.complete.txt.gz"
+#exonref_name = wd+"/REF/hg19.exons.merged.bed"
 
 
 with gzip.open(reference_name) as fr:
