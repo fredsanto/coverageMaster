@@ -28,7 +28,7 @@ from DGVExplorer import DGVExplorer
 
 usage = "usage: %prog [options] <cov_file> <stats_file> <gene list(file or comma separated gene names)|region(chr:start-end)> -r <reference.cov> -o <output_px>"
 parser = OptionParser(usage = usage)
-parser.add_option("-c",'--control',  dest="control", help = "<optional> txt file with a control file per line (.cov with .report.txt in same folder)")
+parser.add_option("-c",'--control',  dest="control", help = "a .cov file or a text file with a control file per line (.cov with .report.txt in same folder)")
 parser.add_option("-r",'--ref',  dest="ref", help = "reference file", default = "")
 parser.add_option("-o",'--out',  dest="output_px", help = "output prefix", default = "")
 parser.add_option("-g",'--cgd',  dest="cgd", help = "<optional> clinical genomic database", default = "")
