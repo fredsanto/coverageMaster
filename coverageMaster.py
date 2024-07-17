@@ -447,7 +447,7 @@ if __name__ == '__main__':
                     repository = p.map(pfunc, qregions)
             
             if repository:
-                qregions_next = [b[0] for b in repository if (b!=None and ("NO COVERAGE" not in b))]
+                qregions_next = [b[0] for b in repository if (b and (type(b)!=str))]
                 qregions_failed_in_control = [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE IN CONTROL" ==  x))]
                 qregions_failed += [qregions[q] for q in list(locate(repository,lambda x:"NO COVERAGE" ==  x))]
                 if qregions_failed:
