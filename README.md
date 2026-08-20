@@ -1,7 +1,7 @@
 coverageMaster User Guide
 ================
 ## News
-Now set to hg38
+Now set to hg38 - use `coverageMaster_hg38.py` / `libCoverageMaster_hg38.py`, which also has hardened error handling (clear messages on missing/invalid `-r`/`-g`/`-c` or a bad gene name, instead of a silent-looking failure). See [DOCKER.md](DOCKER.md) for a containerized build.
 
 ## Introduction
 coverageMaster is a copy number variant (CNV) calling algorithm based on depth-of-coverage maps to detect CNVs of any size at nucleotide level in Whole Exome Sequencing and Whole Genome Sequencing data. CoverageMaster analyzes the sequencing coverage in a multidimensional Wavelet compressed (nucleotide-like) space and the CNVs are inferred with Hidden Markov Models at the nucleotide-like level. Through « zooming » across dimensions, the punctual analysis of regions with altered depth and the visual inspection of the outcome at nucleotide level to further reduce the false positive rate are enabled.   
@@ -90,16 +90,22 @@ coverageMaster utilizes a reference file with the average coverage and standard 
 * __.CM.log__
     * .log file of the run.
 ## Docker Image
- To avoid the burden of installing all python library dependencies, a Docker image of coverageMaster can be created:
+ To avoid the burden of installing all python library dependencies, a Docker
+ image running `coverageMaster_hg38.py` can be built - dependencies are
+ pinned to the versions validated against this script (see the Dockerfile).
+ Full details, rationale, and a real-data validated example are in
+ [DOCKER.md](DOCKER.md).
  ```
- > cd coverageMasterfolder (i.e. where coverageMaster.py is)
- > docker build -t coveragemaster .
+ > cd coverageMaster (i.e. where coverageMaster_hg38.py is)
+ > docker build -t coveragemaster-hg38 .
  ```
- coveragemaster image should be now be listed when typing
+ coveragemaster-hg38 image should now be listed when typing
  `> docker image ls`
- 
- For example, to execute the demo:
+
+ Mount your data directory at `/data` and use container-side `/data/...`
+ paths, same arguments as running the script directly:
  ```
- > cd DEMO
- > gene=PGM1 && co=control.hg38.PGM1.cov && docker run --rm -v `pwd`/:/data coveragemaster /data/test.hg38.PGM1.cov /data/test.hg38.PGM1.report.txt $gene -c /data/$co -r /data/ref.hg38.PGM1 -o /data/test.hg38.PGM1
+ > docker run --rm -v /path/to/your/data:/data -w /data coveragemaster-hg38 \
+       /data/sample.cov /data/sample.report.txt GENE_OR_GENELIST \
+       -c /data/control.cov -r /data/total_ref_m_std -o /data/out_prefix -f
  ```
