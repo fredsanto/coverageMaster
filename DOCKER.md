@@ -1,58 +1,65 @@
-# coverageMaster (Docker)
+# coverageMaster_hg38 (Docker)
 
-CNV caller from `samtools depth` coverage data, packaged as a self-contained Docker
-image. This replaces the legacy bare-metal install (which required CentOS 7 /
-Python 3.6 and pinned numpy/scipy/matplotlib versions to match the OS's glibc) —
-the container ships its own Python 3.10 environment, so it runs on any Docker host.
+Docker packaging for `coverageMaster_hg38.py` / `libCoverageMaster_hg38.py` — the
+actual CNV-calling script used in production (see `SeqONE/README.md` in the
+Medigenome pipeline repo) — not a rewrite. Same code, same output, just
+containerized so it runs without the bare-metal CentOS 7 / Python 3.6 /
+glibc-pinned-dependency setup the host install requires.
 
-## Quickstart
+## What's in the image
+
+- `coverageMaster_hg38.py`, `libCoverageMaster_hg38.py`, `HMM_CM.py`,
+  `ReadCount.py`, `DGVExplorer.py`, `log.py` — copied in as-is.
+- `REF/REFSEQ_hg38_c_HGMD3.gz` + `REF/hg38.exons.merged.bed` — the hg38 gene
+  annotation + exon reference the script loads at import time (~11MB,
+  baked in rather than mounted since it's a fixed dependency, not per-run data).
+- Dependencies pinned to the versions validated against this script on the
+  production host: `numpy==1.16.2 sympy==1.0 PyWavelets==1.0.3
+  matplotlib==2.2.3 scipy==1.2.1 more-itertools==8.8.0 pandas==1.0.0`, on
+  Python 3.7 (newer matplotlib drops the top-level `pylab` module this
+  script imports; newer numpy/scipy can shift floating-point behavior in
+  the HMM/wavelet calls — don't bump these without re-validating output).
+
+## Build
 
 ```bash
-# 1. Build the image (from this directory)
-docker build -t coveragemaster .
+docker build -t coveragemaster-hg38 .
+```
 
-# 2. Run it against your data
-./run.sh <data_dir> <ref_dir> \
+## Run
+
+Mount whatever directory holds your `.cov` / `.report.txt` / control /
+reference files at `/data`, then pass container-side `/data/...` paths as
+you would on the bare-metal command line:
+
+```bash
+docker run --rm \
+    -v /path/to/your/data:/data \
+    -w /data \
+    coveragemaster-hg38 \
     /data/sample.cov /data/sample.report.txt GENE_OR_GENELIST \
-    -c /data/control.cov -r /data/ref_file \
-    -o /data/out_prefix --genome hg38
+    -c /data/control.cov -r /data/total_ref_m_std \
+    -o /data/out_prefix -g /data/CGD_20_25.inh -n 4 -f
 ```
 
-- `<data_dir>` — local folder with your `.cov` / `.report.txt` / control / gene-list files. Mounted read-write at `/data` inside the container; use `/data/...` paths in the arguments.
-- `<ref_dir>` — local folder with the RefSeq annotation + exon BED reference files (the `REF/` folder in this repo). Mounted read-only at `/ref`; the tool finds `REFSEQ_*` / `*.exons.merged.bed` there automatically via `COVERAGEMASTER_REF_DIR` unless you pass `--refseq` / `--exon-bed` explicitly.
+- `-w /data` matters if you're using a multi-sample control **list** file
+  (`-c controls.txt`, one `.cov` path per line) with paths relative to your
+  data root — those resolve relative to the container's working directory.
+- Output files (`.CMreport`, `.CMcalls`, `.CM.log`, `.CMpositives.pdf`) land
+  back on your host under `/path/to/your/data`, since `/data` is a live
+  mount.
 
-Output files (`<prefix>.CMreport`, `.CMcalls`, `.CM.log`, `.CMpositives.pdf`) land back on your host wherever `<data_dir>` points, since `/data` is a live mount, not copied out of the container afterward.
+## Validated 2026-08-20
 
-## Try it on the bundled demo case
+- Real production case (DME-8598, gene ADK, real `control.DM8xxx_hg38`
+  control + `total_ref_m_std` reference): identical result to the
+  bare-metal run (`ADK Call: []`).
+- Today's error-handling fixes (clear `FATAL SETUP ERROR` messages, exit
+  code 1 on bad input) confirmed working inside the container.
 
-```bash
-./run.sh ./DEMO ./REF \
-    /data/test.PGM1.cov /data/test.PGM1.report.txt PGM1 \
-    -c /data/control.PGM1.cov -r /data/ref.PGM1 \
-    -o /data/test_v2.PGM1 --genome hg19 -f
-```
+## Note
 
-Expect a single `DEL` call in `PGM1` (~chr1:64,125,260-64,240,084) — this matches the
-known-good result from the legacy tool on the same demo data. Verified against both
-this hg19 demo case and real hg38 production data on 2026-08-20.
-
-## docker-compose alternative
-
-```bash
-DATA_DIR=/path/to/your/data REF_DIR=./REF \
-  docker compose run coveragemaster \
-    /data/sample.cov /data/sample.report.txt GENE \
-    -c /data/control.cov -r /data/ref_file -o /data/out
-```
-
-## Entry points (installed inside the image)
-
-- `coveragemaster` — the main CNV caller (what `ENTRYPOINT` runs)
-- `coveragemaster-build-ref` — builds the per-chromosome reference `.res` files from a folder of control `.cov`/`.report.txt` pairs
-- `coveragemaster-compute-stats` — computes per-position mean/std from the concatenated reference
-
-## Notes
-
-- The `REF/` folder (RefSeq gene annotations + exon BED, ~100MB+) is deliberately **not** baked into the image — it's mounted at runtime via `-v ref_dir:/ref`, so the image stays small and you can swap hg19/hg38 references without rebuilding.
-- `--genome hg19` / `--genome hg38` selects which RefSeq/exon reference set to look for by default; override with `--refseq` / `--exon-bed` for a custom build.
-- This package (`coveragemaster/`, `pyproject.toml`, `Dockerfile`, etc.) is a separate, independent rewrite from the legacy `coverageMaster_hg38.py` / `libCoverageMaster_hg38.py` scripts documented in `README.md` — it does not share code with them, so fixes made to one side don't automatically apply to the other.
+There is a separate, independent Python-package rewrite of coverageMaster
+(different code, different CLI, `coverageMaster_v2/` in this repo) — that
+one is *not* what this Dockerfile builds. If you're looking for the exact
+script the SeqONE pipeline runs today, this is it.
