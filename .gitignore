@@ -1,0 +1,8 @@
+# Legacy scripts kept locally but no longer tracked in this repo -
+# superseded by coverageMaster_hg38.py / libCoverageMaster_hg38.py
+coverageMaster.py
+libCoverageMaster.py
+
+__pycache__/
+*.pyc
+*~
