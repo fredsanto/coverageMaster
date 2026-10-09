@@ -308,16 +308,12 @@ def convertHMM(approx, data_n):
         call = []
         dd = diff([1]+approx.tolist()+[1])
         transitions = where(dd!=0)[0]
-        txp = [transitions[i:i+2] for i in range(0,len(transitions),2)]
-        for n,el in enumerate(txp):
-            if len(el)==1: ## adiacent del-dup end==start 
-                el = (txp[n-1][1],el[0])
-            if dd[el[0]]<dd[el[1]]:
-                mut="DEL"
-            if dd[el[0]]>dd[el[1]]:
-                mut="DUP"
-            if dd[el[0]]==dd[el[1]]:
-                mut="ERROR"
+        ## consecutive transitions bound runs of constant state; adjacent del-dup share a boundary
+        for el in zip(transitions[:-1],transitions[1:]):
+            state = approx[el[0]]
+            if state==1:
+                continue
+            mut = "DEL" if state<1 else "DUP"
             try:
                 coords = (data_n[el[0]][0],data_n[el[1]-1][0])
                 size = int(coords[1])-int(coords[0])
